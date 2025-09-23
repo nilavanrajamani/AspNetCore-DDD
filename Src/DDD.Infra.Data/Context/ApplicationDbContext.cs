@@ -22,6 +22,10 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Customer> Customers { get; set; }
 
+    public DbSet<Event> Events { get; set; }
+
+    public DbSet<Venue> Venues { get; set; }
+
     // public override int SaveChanges()
     // {
     //     OnBeforeSaving();
@@ -49,6 +53,8 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new CustomerMap());
+        modelBuilder.ApplyConfiguration(new EventMap());
+        modelBuilder.ApplyConfiguration(new VenueMap());
 
         base.OnModelCreating(modelBuilder);
     }

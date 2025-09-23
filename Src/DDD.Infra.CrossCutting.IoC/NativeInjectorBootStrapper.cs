@@ -47,17 +47,20 @@ public class NativeInjectorBootStrapper
 
         // Application
         services.AddScoped<ICustomerAppService, CustomerAppService>();
+        services.AddScoped<IEventAppService, EventAppService>();
 
         // Domain - Events
         services.AddScoped<INotificationHandler<DomainNotification>, DomainNotificationHandler>();
         services.AddScoped<INotificationHandler<CustomerRegisteredEvent>, CustomerEventHandler>();
         services.AddScoped<INotificationHandler<CustomerUpdatedEvent>, CustomerEventHandler>();
         services.AddScoped<INotificationHandler<CustomerRemovedEvent>, CustomerEventHandler>();
+        services.AddScoped<INotificationHandler<EventCreatedEvent>, EventEventHandler>();
 
         // Domain - Commands
         services.AddScoped<IRequestHandler<RegisterNewCustomerCommand, bool>, CustomerCommandHandler>();
         services.AddScoped<IRequestHandler<UpdateCustomerCommand, bool>, CustomerCommandHandler>();
         services.AddScoped<IRequestHandler<RemoveCustomerCommand, bool>, CustomerCommandHandler>();
+        services.AddScoped<IRequestHandler<CreateEventCommand, bool>, EventCommandHandler>();
 
         // Domain - Providers, 3rd parties
         services.AddScoped<IHttpProvider, HttpProvider>();
@@ -69,6 +72,8 @@ public class NativeInjectorBootStrapper
 
         // Infra - Data
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IVenueRepository, VenueRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Infra - Data EventSourcing
