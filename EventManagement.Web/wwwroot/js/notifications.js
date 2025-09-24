@@ -129,14 +129,37 @@ class NotificationManager {
 window.notificationManager = new NotificationManager();
 
 // Utility functions for UI feedback
-window.showLoading = function() {
+let loadingTimeout;
+
+window.showLoading = function(timeoutMs = 10000) {
     const spinner = document.getElementById('loadingSpinner');
-    if (spinner) spinner.style.display = 'flex';
+    if (spinner) {
+        spinner.style.display = 'flex';
+        
+        // Clear any existing timeout
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+        }
+        
+        // Set a timeout to auto-hide the spinner if it's left showing
+        loadingTimeout = setTimeout(() => {
+            console.warn('Loading spinner auto-hidden after timeout');
+            window.hideLoading();
+        }, timeoutMs);
+    }
 };
 
 window.hideLoading = function() {
     const spinner = document.getElementById('loadingSpinner');
-    if (spinner) spinner.style.display = 'none';
+    if (spinner) {
+        spinner.style.display = 'none';
+        
+        // Clear the timeout since we're manually hiding
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = null;
+        }
+    }
 };
 
 window.showSuccess = function(title, message) {
@@ -154,3 +177,9 @@ window.showWarning = function(title, message) {
 window.showInfo = function(title, message) {
     window.notificationManager.showNotification('info', title, message);
 };
+
+// Initialize loading spinner state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure loading spinner is hidden by default
+    window.hideLoading();
+});

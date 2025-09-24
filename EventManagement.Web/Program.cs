@@ -1,68 +1,57 @@
 using EventManagement.Web.Services;
 using EventManagement.Web.Hubs;
-using EventManagement.Web.Data;
-using EventManagement.Web.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add database context
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add Identity services
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+// Configure JWT Authentication
+builder.Services.AddAuthentication(options =>
 {
-    // Password requirements
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequiredUniqueChars = 1;
-
-    // Lockout settings
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.MaxFailedAccessAttempts = 5;
-    options.Lockout.AllowedForNewUsers = true;
-
-    // User settings
-    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
-    options.User.RequireUniqueEmail = true;
-
-    // Sign in settings
-    options.SignIn.RequireConfirmedEmail = false; // Set to true in production with email service
-    options.SignIn.RequireConfirmedPhoneNumber = false;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
-
-// Configure cookie settings
-builder.Services.ConfigureApplicationCookie(options =>
+.AddJwtBearer(options =>
 {
-    options.Cookie.HttpOnly = true;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-    options.LoginPath = "/Account/Login";
-    options.LogoutPath = "/Account/Logout";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-    options.SlidingExpiration = true;
+    // Configure JWT validation - these should match the API's JWT settings
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false, // Set to true in production with proper issuer
+        ValidateAudience = false, // Set to true in production with proper audience
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = false, // We'll validate tokens via API calls
+        ClockSkew = TimeSpan.Zero
+    };
+    
+    // Allow token from session instead of header for web app
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var token = context.HttpContext.Session.GetString("access_token");
+            if (!string.IsNullOrEmpty(token))
+            {
+                context.Token = token;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // Add services to the container.
 builder.Services.AddRazorPages(options =>
 {
-    // Require authentication by default for all pages
-    options.Conventions.AuthorizeFolder("/Events");
-    options.Conventions.AuthorizeFolder("/Account/Manage");
-    
-    // Allow anonymous access to specific pages
+    // Allow anonymous access to authentication pages and public pages
     options.Conventions.AllowAnonymousToPage("/Account/Login");
     options.Conventions.AllowAnonymousToPage("/Account/Register");
-    options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
-    options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
     options.Conventions.AllowAnonymousToPage("/");
     options.Conventions.AllowAnonymousToPage("/Privacy");
+    
+    // For now, allow anonymous access to Events pages as well
+    // TODO: Implement proper JWT-based authorization middleware
+    options.Conventions.AllowAnonymousToFolder("/Events");
+    options.Conventions.AllowAnonymousToFolder("/Account");
 });
 
 // Configure API HttpClient for backend communication
@@ -72,10 +61,18 @@ builder.Services.AddHttpClient("EventAPI", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+// Configure Authentication HttpClient for DDD.Services.Api authentication endpoints
+builder.Services.AddHttpClient<AuthenticationService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7200/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 // Register custom services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IEventApiService, EventApiService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 // Add SignalR for real-time features
 builder.Services.AddSignalR();
@@ -101,10 +98,13 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseSession();
+
+// Use custom JWT authentication middleware instead of built-in JWT middleware
+app.UseMiddleware<EventManagement.Web.Middleware.JwtAuthenticationMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseSession();
 
 app.MapRazorPages();
 

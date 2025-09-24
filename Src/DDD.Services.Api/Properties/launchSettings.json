@@ -4,11 +4,26 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:5000",
-      "sslPort": 0
+      "applicationUrl": "http://localhost:7201",
+      "sslPort": 44300
     }
   },
   "profiles": {
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "DDD.Services.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7200;http://localhost:7201",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
     "Dev - IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
@@ -35,7 +50,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5000",
+      "applicationUrl": "https://localhost:7200;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -45,21 +60,21 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5000",
+      "applicationUrl": "https://localhost:7200;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "Staging": {
       "commandName": "Project",
-      "applicationUrl": "http://localhost:5000",
+      "applicationUrl": "https://localhost:7200;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging"
       }
     },
     "Prod": {
       "commandName": "Project",
-      "applicationUrl": "http://localhost:5000",
+      "applicationUrl": "https://localhost:7200;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
       }

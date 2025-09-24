@@ -1,30 +1,27 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using EventManagement.Web.Models;
-using EventManagement.Web.Models.Authentication;
+using EventManagement.Web.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace EventManagement.Web.Pages.Account
 {
     public class LoginModel : PageModel
     {
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AuthenticationService _authService;
+        private readonly ITokenService _tokenService;
         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, 
-                         UserManager<ApplicationUser> userManager,
+        public LoginModel(AuthenticationService authService, 
+                         ITokenService tokenService,
                          ILogger<LoginModel> logger)
         {
-            _signInManager = signInManager;
-            _userManager = userManager;
+            _authService = authService;
+            _tokenService = tokenService;
             _logger = logger;
         }
 
         [BindProperty]
-        public LoginViewModel Input { get; set; } = new();
+        public LoginInput Input { get; set; } = new();
 
         public string? ReturnUrl { get; set; }
 
@@ -40,8 +37,8 @@ namespace EventManagement.Web.Pages.Account
 
             returnUrl ??= Url.Content("~/");
 
-            // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            // Clear existing tokens
+            await _tokenService.ClearTokensAsync();
 
             ReturnUrl = returnUrl;
         }
@@ -52,42 +49,23 @@ namespace EventManagement.Web.Pages.Account
 
             if (ModelState.IsValid)
             {
-                // Find user by email
-                var user = await _userManager.FindByEmailAsync(Input.Email);
-                if (user != null && !user.IsActive)
+                var loginRequest = new LoginRequest
                 {
-                    ModelState.AddModelError(string.Empty, "Your account has been deactivated. Please contact support.");
-                    return Page();
-                }
+                    Email = Input.Email,
+                    Password = Input.Password
+                };
 
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+                var result = await _authService.LoginAsync(loginRequest);
                 
-                if (result.Succeeded)
+                if (result.Success && !string.IsNullOrEmpty(result.AccessToken) && !string.IsNullOrEmpty(result.RefreshToken))
                 {
-                    // Update last login time
-                    if (user != null)
-                    {
-                        user.LastLoginAt = DateTime.UtcNow;
-                        await _userManager.UpdateAsync(user);
-                    }
-
-                    _logger.LogInformation("User logged in.");
+                    await _tokenService.SetTokensAsync(result.AccessToken, result.RefreshToken);
+                    _logger.LogInformation("User logged in successfully.");
                     return LocalRedirect(returnUrl);
-                }
-                
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
-                }
-                
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToPage("./Lockout");
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Invalid login attempt.");
                     return Page();
                 }
             }
@@ -95,5 +73,19 @@ namespace EventManagement.Web.Pages.Account
             // If we got this far, something failed, redisplay form
             return Page();
         }
+    }
+
+    public class LoginInput
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
     }
 }

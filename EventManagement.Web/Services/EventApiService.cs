@@ -49,17 +49,35 @@ public class EventApiService : IEventApiService
     {
         try
         {
+            SetAuthenticationHeaders();
             var response = await _httpClient.GetAsync("api/v1/events");
             var content = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var events = JsonConvert.DeserializeObject<List<EventViewModel>>(content) ?? new List<EventViewModel>();
-                return new ApiResponse<List<EventViewModel>>
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<List<EventViewModel>>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
                 {
-                    Success = true,
-                    Data = events
-                };
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true 
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = false,
+                        Message = errorMessage,
+                        Data = new List<EventViewModel>()
+                    };
+                }
             }
 
             return new ApiResponse<List<EventViewModel>>
@@ -85,17 +103,34 @@ public class EventApiService : IEventApiService
     {
         try
         {
+            SetAuthenticationHeaders();
             var response = await _httpClient.GetAsync($"api/v1/events/{id}");
             var content = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
             {
-                var eventData = JsonConvert.DeserializeObject<EventViewModel>(content);
-                return new ApiResponse<EventViewModel>
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<EventViewModel>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
                 {
-                    Success = true,
-                    Data = eventData
-                };
+                    return new ApiResponse<EventViewModel>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<EventViewModel>
+                    {
+                        Success = false,
+                        Message = errorMessage
+                    };
+                }
             }
 
             return new ApiResponse<EventViewModel>
@@ -119,6 +154,7 @@ public class EventApiService : IEventApiService
     {
         try
         {
+            SetAuthenticationHeaders();
             var json = JsonConvert.SerializeObject(new
             {
                 title = model.Title,
@@ -136,13 +172,30 @@ public class EventApiService : IEventApiService
 
             if (response.IsSuccessStatusCode)
             {
-                var createdEvent = JsonConvert.DeserializeObject<EventViewModel>(responseContent);
-                return new ApiResponse<EventViewModel>
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<EventViewModel>>(responseContent);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
                 {
-                    Success = true,
-                    Data = createdEvent,
-                    Message = "Event created successfully"
-                };
+                    return new ApiResponse<EventViewModel>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data,
+                        Message = "Event created successfully"
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<EventViewModel>
+                    {
+                        Success = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse?.Errors?.ToList() ?? new List<string>()
+                    };
+                }
             }
 
             return new ApiResponse<EventViewModel>
@@ -167,6 +220,7 @@ public class EventApiService : IEventApiService
     {
         try
         {
+            SetAuthenticationHeaders();
             var response = await _httpClient.DeleteAsync($"api/v1/events/{id}");
 
             return new ApiResponse<bool>

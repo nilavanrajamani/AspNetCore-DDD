@@ -9,6 +9,9 @@ using DDD.Services.Api.StartupExtensions;
 using MediatR;
 
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using DDD.Infra.CrossCutting.Identity.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -123,4 +126,72 @@ HealthCheckExtension.UseCustomizedHealthCheck(app, builder.Environment);
 app.UseCustomizedSwagger(builder.Environment);
 // END: Custom middlewares
 
+// ----- Database Migration -----
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var applicationDbContext = services.GetRequiredService<DDD.Infra.Data.Context.ApplicationDbContext>();
+        var eventStoreContext = services.GetRequiredService<DDD.Infra.Data.Context.EventStoreSqlContext>();
+        var authDbContext = services.GetRequiredService<DDD.Infra.CrossCutting.Identity.Data.AuthDbContext>();
+        
+        // Create application tables
+        applicationDbContext.Database.EnsureCreated();
+        
+        // Create event store tables
+        eventStoreContext.Database.EnsureCreated();
+        
+        // Verify Identity tables exist
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Verifying Identity database schema...");
+        
+        try
+        {
+            var userCount = await authDbContext.Users.CountAsync();
+            logger.LogInformation("Identity tables are available. User count: {Count}", userCount);
+            
+            // Seed default roles
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            await SeedRolesAsync(roleManager, logger);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Identity tables are not available: {Message}", ex.Message);
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while creating the database.");
+    }
+}
+
 app.Run();
+
+static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager, ILogger logger)
+{
+    logger.LogInformation("Seeding default roles...");
+    
+    var roles = new[] { Roles.Admin, Roles.User };
+    
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            var result = await roleManager.CreateAsync(new IdentityRole(role));
+            if (result.Succeeded)
+            {
+                logger.LogInformation("Role '{Role}' created successfully", role);
+            }
+            else
+            {
+                logger.LogError("Failed to create role '{Role}': {Errors}", role, string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+        }
+        else
+        {
+            logger.LogInformation("Role '{Role}' already exists", role);
+        }
+    }
+}
