@@ -1,12 +1,14 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
 using DDD.Domain.Commands;
 using DDD.Domain.Core.Bus;
 using DDD.Domain.Core.Notifications;
 using DDD.Domain.Events;
 using DDD.Domain.Interfaces;
 using DDD.Domain.Models;
+
 using MediatR;
 
 namespace DDD.Domain.CommandHandlers;

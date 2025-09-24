@@ -1,10 +1,13 @@
 using System;
+
 using DDD.Application.Interfaces;
 using DDD.Application.ViewModels;
 using DDD.Domain.Core.Bus;
 using DDD.Domain.Core.Notifications;
 using DDD.Infra.CrossCutting.Identity.Authorization;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

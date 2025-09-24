@@ -1,4 +1,5 @@
 using System;
+
 using DDD.Domain.Core.Commands;
 
 namespace DDD.Domain.Commands;

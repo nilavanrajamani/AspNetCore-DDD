@@ -1,0 +1,26 @@
+@page
+@model EventManagement.Web.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="text-center">
+            <div class="display-1 text-danger">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h1 class="text-danger">@ViewData["Title"]</h1>
+            <p class="lead">You do not have permission to access this resource.</p>
+            <hr />
+            <p>
+                <a asp-page="/Index" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Return to Home
+                </a>
+                <a asp-page="/Account/Login" class="btn btn-outline-secondary">
+                    <i class="fas fa-sign-in-alt"></i> Login with Different Account
+                </a>
+            </p>
+        </div>
+    </div>
+</div>

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+
 using DDD.Application.Interfaces;
 using DDD.Application.ViewModels;
 using DDD.Domain.Commands;

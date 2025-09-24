@@ -1,0 +1,406 @@
+@page "{id:guid}"
+@model EventManagement.Web.Pages.Events.DetailsModel
+@{
+    ViewData["Title"] = Model.Event.Title ?? "Event Details";
+}
+
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="status-badge bg-@GetStatusColor(Model.Event.Status) text-white me-3">
+                        @GetStatusText(Model.Event.Status)
+                    </span>
+                    <span class="status-badge bg-@GetVisibilityColor(Model.Event.Visibility) text-white">
+                        @GetVisibilityText(Model.Event.Visibility)
+                    </span>
+                </div>
+                <h1 class="h2 mb-0">@Model.Event.Title</h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    <i class="fas fa-calendar me-1"></i>
+                    @Model.Event.Date.ToString("dddd, MMMM dd, yyyy 'at' h:mm tt")
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="btn-group" role="group">
+                    <a asp-page="/Events/List" class="btn btn-light btn-custom">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Events
+                    </a>
+                    @if (Model.Event.Status == EventStatus.Draft)
+                    {
+                        <a asp-page="/Events/Edit" asp-route-id="@Model.Event.Id" class="btn btn-warning btn-custom">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    @if (Model.IsError)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @Model.Message
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Event Details -->
+            <div class="col-lg-8">
+                <div class="card card-custom mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Event Description
+                        </h5>
+                        @if (!string.IsNullOrEmpty(Model.Event.Description))
+                        {
+                            <p class="card-text">@Model.Event.Description</p>
+                        }
+                        else
+                        {
+                            <p class="card-text text-muted fst-italic">No description provided for this event.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Event Timeline -->
+                <div class="card card-custom mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-timeline me-2"></i>
+                            Event Timeline
+                        </h5>
+                        <div class="timeline">
+                            <div class="timeline-item @(Model.Event.CreatedAt <= DateTime.Now ? "completed" : "")">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Event Created</h6>
+                                    <p class="text-muted mb-0">@Model.Event.CreatedAt.ToString("MMM dd, yyyy 'at' h:mm tt")</p>
+                                </div>
+                            </div>
+                            
+                            @if (Model.Event.Status == EventStatus.Published)
+                            {
+                                <div class="timeline-item completed">
+                                    <div class="timeline-marker">
+                                        <i class="fas fa-globe"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <h6>Event Published</h6>
+                                        <p class="text-muted mb-0">Event is now visible to attendees</p>
+                                    </div>
+                                </div>
+                            }
+                            
+                            <div class="timeline-item @(Model.Event.Date <= DateTime.Now ? "completed" : "")">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Event Date</h6>
+                                    <p class="text-muted mb-0">@Model.Event.Date.ToString("MMM dd, yyyy 'at' h:mm tt")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Info Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Info -->
+                <div class="card card-custom mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-info me-2"></i>
+                            Event Information
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-5 text-muted">
+                                <i class="fas fa-calendar-alt me-1"></i>Date:
+                            </div>
+                            <div class="col-7">
+                                @Model.Event.Date.ToString("MMM dd, yyyy")
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 text-muted">
+                                <i class="fas fa-clock me-1"></i>Time:
+                            </div>
+                            <div class="col-7">
+                                @Model.Event.Date.ToString("h:mm tt")
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 text-muted">
+                                <i class="fas fa-flag me-1"></i>Status:
+                            </div>
+                            <div class="col-7">
+                                <span class="badge bg-@GetStatusColor(Model.Event.Status)">
+                                    @GetStatusText(Model.Event.Status)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-5 text-muted">
+                                <i class="fas fa-eye me-1"></i>Visibility:
+                            </div>
+                            <div class="col-7">
+                                <span class="badge bg-@GetVisibilityColor(Model.Event.Visibility)">
+                                    @GetVisibilityText(Model.Event.Visibility)
+                                </span>
+                            </div>
+                        </div>
+                        @if (Model.Event.VenueId.HasValue && !string.IsNullOrEmpty(Model.Event.VenueName))
+                        {
+                            <div class="row mb-3">
+                                <div class="col-5 text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Venue:
+                                </div>
+                                <div class="col-7">
+                                    @Model.Event.VenueName
+                                </div>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-5 text-muted">
+                                <i class="fas fa-plus me-1"></i>Created:
+                            </div>
+                            <div class="col-7">
+                                @Model.Event.CreatedAt.ToString("MMM dd, yyyy")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Actions -->
+                <div class="card card-custom mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            Actions
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Event.Status == EventStatus.Draft)
+                        {
+                            <div class="d-grid gap-2">
+                                <a asp-page="/Events/Edit" asp-route-id="@Model.Event.Id" class="btn btn-warning btn-custom">
+                                    <i class="fas fa-edit me-2"></i>Edit Event
+                                </a>
+                                <button type="button" class="btn btn-success btn-custom" onclick="publishEvent('@Model.Event.Id')">
+                                    <i class="fas fa-globe me-2"></i>Publish Event
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-custom" onclick="confirmDelete('@Model.Event.Id', '@Model.Event.Title')">
+                                    <i class="fas fa-trash me-2"></i>Delete Event
+                                </button>
+                            </div>
+                        }
+                        else if (Model.Event.Status == EventStatus.Published)
+                        {
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-info btn-custom" onclick="shareEvent('@Model.Event.Id')">
+                                    <i class="fas fa-share me-2"></i>Share Event
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-custom" onclick="unpublishEvent('@Model.Event.Id')">
+                                    <i class="fas fa-eye-slash me-2"></i>Unpublish
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-custom" onclick="cancelEvent('@Model.Event.Id')">
+                                    <i class="fas fa-times me-2"></i>Cancel Event
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                No actions available for this event status.
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Event Stats (Placeholder) -->
+                <div class="card card-custom">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Statistics
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="h5 mb-0 text-primary">0</div>
+                                <small class="text-muted">Views</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h5 mb-0 text-success">0</div>
+                                <small class="text-muted">Interested</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="h5 mb-0 text-info">0</div>
+                                <small class="text-muted">Attending</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    private string GetStatusColor(EventStatus status)
+    {
+        return status switch
+        {
+            EventStatus.Draft => "secondary",
+            EventStatus.Published => "success",
+            EventStatus.Cancelled => "danger",
+            EventStatus.Completed => "info",
+            _ => "secondary"
+        };
+    }
+
+    private string GetStatusText(EventStatus status)
+    {
+        return status switch
+        {
+            EventStatus.Draft => "Draft",
+            EventStatus.Published => "Published",
+            EventStatus.Cancelled => "Cancelled",
+            EventStatus.Completed => "Completed",
+            _ => "Unknown"
+        };
+    }
+
+    private string GetVisibilityColor(EventVisibility visibility)
+    {
+        return visibility switch
+        {
+            EventVisibility.Public => "success",
+            EventVisibility.Private => "warning",
+            EventVisibility.InviteOnly => "info",
+            _ => "secondary"
+        };
+    }
+
+    private string GetVisibilityText(EventVisibility visibility)
+    {
+        return visibility switch
+        {
+            EventVisibility.Public => "Public",
+            EventVisibility.Private => "Private",
+            EventVisibility.InviteOnly => "Invite Only",
+            _ => "Unknown"
+        };
+    }
+}
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 1rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+        opacity: 0.6;
+    }
+
+    .timeline-item.completed {
+        opacity: 1;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -2rem;
+        top: 0;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+    }
+
+    .timeline-item.completed .timeline-marker {
+        background: var(--success-color);
+    }
+
+    .timeline-content h6 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function publishEvent(eventId) {
+            showInfo('Publishing Event', 'This feature will be implemented in the next phase.');
+        }
+
+        function unpublishEvent(eventId) {
+            showInfo('Unpublishing Event', 'This feature will be implemented in the next phase.');
+        }
+
+        function cancelEvent(eventId) {
+            showWarning('Cancel Event', 'This feature will be implemented in the next phase.');
+        }
+
+        function shareEvent(eventId) {
+            const url = window.location.href;
+            if (navigator.share) {
+                navigator.share({
+                    title: '@Model.Event.Title',
+                    text: 'Check out this event!',
+                    url: url
+                });
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(url).then(() => {
+                    showSuccess('Link Copied', 'Event link has been copied to clipboard.');
+                });
+            }
+        }
+
+        function confirmDelete(eventId, eventTitle) {
+            if (confirm(`Are you sure you want to delete the event "${eventTitle}"? This action cannot be undone.`)) {
+                // In a real implementation, this would call the delete API
+                showWarning('Delete Event', 'This feature will be implemented in the next phase.');
+            }
+        }
+
+        // Join event group for real-time updates
+        $(document).ready(function() {
+            if (window.notificationManager) {
+                window.notificationManager.joinEventGroup('@Model.Event.Id');
+            }
+        });
+    </script>
+}

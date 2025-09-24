@@ -1,0 +1,349 @@
+@page
+@model EventManagement.Web.Pages.Events.CreateModel
+@{
+    ViewData["Title"] = "Create Event";
+}
+
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-plus me-2"></i>
+                    Create New Event
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">Plan and organize your next amazing event</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a asp-page="/Events/List" class="btn btn-light btn-custom">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Events
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card card-custom">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-plus me-2"></i>
+                        Event Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="createEventForm">
+                        <div asp-validation-summary="All" class="alert alert-danger d-none" id="validationSummary"></div>
+
+                        <!-- Event Title -->
+                        <div class="mb-4">
+                            <label asp-for="Event.Title" class="form-label required">
+                                <i class="fas fa-tag me-1"></i>Event Title
+                            </label>
+                            <input asp-for="Event.Title" class="form-control form-control-lg" 
+                                   placeholder="Enter a compelling event title..." 
+                                   maxlength="200" required>
+                            <div class="form-text">
+                                <span id="titleCount">0</span>/200 characters
+                            </div>
+                            <span asp-validation-for="Event.Title" class="text-danger"></span>
+                        </div>
+
+                        <!-- Event Description -->
+                        <div class="mb-4">
+                            <label asp-for="Event.Description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Description
+                            </label>
+                            <textarea asp-for="Event.Description" class="form-control" rows="4" 
+                                      placeholder="Provide a detailed description of your event..." 
+                                      maxlength="1000"></textarea>
+                            <div class="form-text">
+                                <span id="descriptionCount">0</span>/1000 characters
+                            </div>
+                            <span asp-validation-for="Event.Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <!-- Event Date and Time -->
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="Event.Date" class="form-label required">
+                                    <i class="fas fa-calendar-alt me-1"></i>Event Date & Time
+                                </label>
+                                <input asp-for="Event.Date" type="datetime-local" class="form-control" 
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required>
+                                <div class="form-text">
+                                    Select when your event will take place
+                                </div>
+                                <span asp-validation-for="Event.Date" class="text-danger"></span>
+                            </div>
+
+                            <!-- Event Visibility -->
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="Event.Visibility" class="form-label">
+                                    <i class="fas fa-eye me-1"></i>Visibility
+                                </label>
+                                <select asp-for="Event.Visibility" class="form-select">
+                                    <option value="0">Public - Anyone can see this event</option>
+                                    <option value="1">Private - Only you can see this event</option>
+                                    <option value="2">Invite Only - Only invited users can see this event</option>
+                                </select>
+                                <div class="form-text">
+                                    Control who can discover your event
+                                </div>
+                                <span asp-validation-for="Event.Visibility" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Venue Selection -->
+                        <div class="mb-4">
+                            <label asp-for="Event.VenueId" class="form-label">
+                                <i class="fas fa-map-marker-alt me-1"></i>Venue
+                            </label>
+                            <select asp-for="Event.VenueId" class="form-select">
+                                <option value="">Select a venue (Optional)</option>
+                                @foreach (var venue in Model.Venues)
+                                {
+                                    <option value="@venue.Id">
+                                        @venue.Name - @venue.Address (Capacity: @venue.Capacity)
+                                    </option>
+                                }
+                            </select>
+                            <div class="form-text">
+                                Choose where your event will take place
+                            </div>
+                            <span asp-validation-for="Event.VenueId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Event Preview Card -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-eye me-1"></i>Preview
+                            </h6>
+                            <div class="card bg-light" id="eventPreview">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge bg-secondary status-badge">Draft</span>
+                                        <span class="badge bg-info visibility-badge">Public</span>
+                                    </div>
+                                    <h5 class="card-title" id="previewTitle">Event Title</h5>
+                                    <p class="card-text text-muted" id="previewDescription">Event description will appear here...</p>
+                                    <div class="text-muted small">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                <span id="previewDate">Select date</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <i class="fas fa-clock me-1"></i>
+                                                <span id="previewTime">Select time</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-1" id="previewVenue" style="display: none;">
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            <span id="previewVenueName"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a asp-page="/Events/List" class="btn btn-outline-secondary btn-custom">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-custom" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>Create Event
+                                <span class="spinner-border spinner-border-sm ms-2 d-none" id="submitSpinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card card-custom mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        Tips for Creating Great Events
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Use a clear, descriptive title that captures the essence of your event
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Provide detailed information about what attendees can expect
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Choose an appropriate date and time for your target audience
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Select the right visibility setting based on your event type
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .required::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+    }
+
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+    }
+
+    #eventPreview {
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+
+    #eventPreview.has-content {
+        border-color: var(--primary-color);
+        background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Character counters
+            function updateCharCount(input, counter) {
+                const count = input.val().length;
+                const maxLength = input.attr('maxlength');
+                $(`#${counter}`).text(count);
+                
+                if (count > maxLength * 0.8) {
+                    $(`#${counter}`).parent().addClass('text-warning');
+                } else {
+                    $(`#${counter}`).parent().removeClass('text-warning');
+                }
+            }
+
+            $('#Event_Title').on('input', function() {
+                updateCharCount($(this), 'titleCount');
+                updatePreview();
+            });
+
+            $('#Event_Description').on('input', function() {
+                updateCharCount($(this), 'descriptionCount');
+                updatePreview();
+            });
+
+            $('#Event_Date').on('change', updatePreview);
+            $('#Event_Visibility').on('change', updatePreview);
+            $('#Event_VenueId').on('change', updatePreview);
+
+            // Initialize character counts
+            updateCharCount($('#Event_Title'), 'titleCount');
+            updateCharCount($('#Event_Description'), 'descriptionCount');
+
+            // Update preview
+            function updatePreview() {
+                const title = $('#Event_Title').val() || 'Event Title';
+                const description = $('#Event_Description').val() || 'Event description will appear here...';
+                const dateTime = $('#Event_Date').val();
+                const visibility = $('#Event_Visibility').val();
+                const venueId = $('#Event_VenueId').val();
+                
+                $('#previewTitle').text(title);
+                $('#previewDescription').text(description.substring(0, 100) + (description.length > 100 ? '...' : ''));
+                
+                // Update visibility badge
+                const visibilityText = visibility == '0' ? 'Public' : visibility == '1' ? 'Private' : 'Invite Only';
+                const visibilityClass = visibility == '0' ? 'bg-success' : visibility == '1' ? 'bg-warning' : 'bg-info';
+                $('.visibility-badge').text(visibilityText).attr('class', `badge status-badge ${visibilityClass}`);
+                
+                // Update date and time
+                if (dateTime) {
+                    const date = new Date(dateTime);
+                    $('#previewDate').text(date.toLocaleDateString());
+                    $('#previewTime').text(date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                } else {
+                    $('#previewDate').text('Select date');
+                    $('#previewTime').text('Select time');
+                }
+                
+                // Update venue
+                if (venueId) {
+                    const selectedVenue = $('#Event_VenueId option:selected').text();
+                    $('#previewVenueName').text(selectedVenue);
+                    $('#previewVenue').show();
+                } else {
+                    $('#previewVenue').hide();
+                }
+                
+                // Add content styling
+                if (title !== 'Event Title' || description !== 'Event description will appear here...') {
+                    $('#eventPreview').addClass('has-content');
+                } else {
+                    $('#eventPreview').removeClass('has-content');
+                }
+            }
+
+            // Form submission
+            $('#createEventForm').on('submit', function() {
+                $('#submitBtn').prop('disabled', true);
+                $('#submitSpinner').removeClass('d-none');
+            });
+
+            // Validation display
+            if ($('.text-danger').length > 0) {
+                $('#validationSummary').removeClass('d-none');
+            }
+
+            // Initialize preview
+            updatePreview();
+        });
+
+        // Real-time validation
+        function validateForm() {
+            const title = $('#Event_Title').val();
+            const date = $('#Event_Date').val();
+            const now = new Date();
+            const eventDate = new Date(date);
+            
+            let isValid = true;
+            
+            // Clear previous errors
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+            
+            // Validate title
+            if (!title || title.length < 3) {
+                $('#Event_Title').addClass('is-invalid');
+                $('#Event_Title').after('<div class="invalid-feedback">Title must be at least 3 characters long.</div>');
+                isValid = false;
+            }
+            
+            // Validate date
+            if (!date || eventDate <= now) {
+                $('#Event_Date').addClass('is-invalid');
+                $('#Event_Date').after('<div class="invalid-feedback">Event date must be in the future.</div>');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // Validate on blur
+        $('#Event_Title, #Event_Date').on('blur', validateForm);
+    </script>
+}
