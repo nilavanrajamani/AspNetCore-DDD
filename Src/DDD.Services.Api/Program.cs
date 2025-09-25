@@ -130,6 +130,7 @@ app.UseCustomizedSwagger(builder.Environment);
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var applicationDbContext = services.GetRequiredService<DDD.Infra.Data.Context.ApplicationDbContext>();
@@ -139,11 +140,16 @@ using (var scope = app.Services.CreateScope())
         // Create application tables
         applicationDbContext.Database.EnsureCreated();
         
+        // Seed venues
+        await SeedVenuesAsync(applicationDbContext, logger);
+        
         // Create event store tables
         eventStoreContext.Database.EnsureCreated();
         
+        // Ensure StoredEvent table exists (workaround for multiple context issue)
+        await EnsureStoredEventTableAsync(eventStoreContext, logger);
+        
         // Verify Identity tables exist
-        var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("Verifying Identity database schema...");
         
         try
@@ -162,7 +168,6 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while creating the database.");
     }
 }
@@ -193,5 +198,64 @@ static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager, ILogger 
         {
             logger.LogInformation("Role '{Role}' already exists", role);
         }
+    }
+}
+
+static async Task SeedVenuesAsync(DDD.Infra.Data.Context.ApplicationDbContext context, ILogger logger)
+{
+    logger.LogInformation("Seeding venues...");
+    
+    if (await context.Venues.AnyAsync())
+    {
+        logger.LogInformation("Venues already exist, skipping seed");
+        return;
+    }
+
+    var venues = new[]
+    {
+        new DDD.Domain.Models.Venue(Guid.NewGuid(), "Conference Center A", "123 Main Street, Downtown", 500),
+        new DDD.Domain.Models.Venue(Guid.NewGuid(), "Grand Ballroom", "456 Oak Avenue, Business District", 300),
+        new DDD.Domain.Models.Venue(Guid.NewGuid(), "Tech Hub Auditorium", "789 Pine Street, Tech Quarter", 150),
+        new DDD.Domain.Models.Venue(Guid.NewGuid(), "Meeting Room Alpha", "321 Elm Street, Corporate Plaza", 50),
+        new DDD.Domain.Models.Venue(Guid.NewGuid(), "Exhibition Hall", "654 Cedar Avenue, Convention Center", 1000),
+    };
+
+    context.Venues.AddRange(venues);
+    await context.SaveChangesAsync();
+    
+    logger.LogInformation("Successfully seeded {Count} venues", venues.Length);
+}
+
+static async Task EnsureStoredEventTableAsync(DDD.Infra.Data.Context.EventStoreSqlContext context, ILogger logger)
+{
+    logger.LogInformation("Ensuring StoredEvent table exists...");
+    
+    try
+    {
+        // Try to query the StoredEvent table to see if it exists
+        await context.StoredEvent.AnyAsync();
+        logger.LogInformation("StoredEvent table exists and is accessible");
+    }
+    catch (Exception)
+    {
+        logger.LogWarning("StoredEvent table does not exist, creating it...");
+        
+        // Create the StoredEvent table using raw SQL with correct column names from StoredEventMap
+        var createTableSql = @"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='StoredEvent' AND xtype='U')
+            BEGIN
+                CREATE TABLE [StoredEvent] (
+                    [Id] uniqueidentifier NOT NULL,
+                    [AggregateId] uniqueidentifier NOT NULL,
+                    [Action] varchar(100) NULL,
+                    [Data] nvarchar(max) NULL,  
+                    [User] nvarchar(max) NULL,
+                    [CreationDate] datetime2 NOT NULL,
+                    CONSTRAINT [PK_StoredEvent] PRIMARY KEY ([Id])
+                );
+            END";
+            
+        await context.Database.ExecuteSqlRawAsync(createTableSql);
+        logger.LogInformation("StoredEvent table created successfully");
     }
 }

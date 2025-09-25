@@ -23,6 +23,11 @@ public class CreateModel : PageModel
 
     public async Task OnGetAsync()
     {
+        // Set default date/time without seconds or milliseconds
+        var defaultDateTime = DateTime.Now.AddDays(7);
+        Event.Date = new DateTime(defaultDateTime.Year, defaultDateTime.Month, defaultDateTime.Day, 
+                                 defaultDateTime.Hour, defaultDateTime.Minute, 0);
+        
         await LoadVenues();
     }
 

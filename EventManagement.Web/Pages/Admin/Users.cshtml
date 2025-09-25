@@ -1,0 +1,112 @@
+@page
+@model EventManagement.Web.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">User Management</h3>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Message))
+                    {
+                        <div class="alert alert-@(Model.IsSuccess ? "success" : "danger")" role="alert">
+                            @Model.Message
+                        </div>
+                    }
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Assign Events Permission</h5>
+                            <form method="post" asp-page-handler="AssignPermission">
+                                <div class="form-group">
+                                    <label for="Email">User Email:</label>
+                                    <input type="email" id="Email" name="Email" class="form-control" required />
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key"></i> Assign Events Permission
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <h5>Current Users</h5>
+                    @if (Model.Users?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Roles</th>
+                                        <th>Has Events Permission</th>
+                                        <th>Claims</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model.Users)
+                                    {
+                                        <tr>
+                                            <td>@user.Email</td>
+                                            <td>
+                                                @if (user.Roles?.Any() == true)
+                                                {
+                                                    <span class="badge badge-primary">@string.Join(", ", user.Roles)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">No roles</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (user.HasEventsPermission)
+                                                {
+                                                    <span class="badge badge-success">
+                                                        <i class="fas fa-check"></i> Yes
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-secondary">
+                                                        <i class="fas fa-times"></i> No
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (user.Claims?.Any() == true)
+                                                {
+                                                    <small class="text-muted">
+                                                        @foreach (var claim in user.Claims)
+                                                        {
+                                                            <div>@claim.Type: @claim.Value</div>
+                                                        }
+                                                    </small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">No claims</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No users found or unable to connect to API.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -19,7 +19,7 @@
     "DDD.Services.Api": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:7200;http://localhost:7201",
+      "applicationUrl": "https://localhost:44300;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -50,7 +50,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7200;http://localhost:7201",
+      "applicationUrl": "https://localhost:44300;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -60,21 +60,21 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://localhost:7200;http://localhost:7201",
+      "applicationUrl": "https://localhost:44300;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "Staging": {
       "commandName": "Project",
-      "applicationUrl": "https://localhost:7200;http://localhost:7201",
+      "applicationUrl": "https://localhost:44300;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Staging"
       }
     },
     "Prod": {
       "commandName": "Project",
-      "applicationUrl": "https://localhost:7200;http://localhost:7201",
+      "applicationUrl": "https://localhost:44300;http://localhost:7201",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
       }

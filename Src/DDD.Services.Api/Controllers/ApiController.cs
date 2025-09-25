@@ -44,7 +44,7 @@ public abstract class ApiController : ControllerBase
         }
 
         return BadRequest(new
-        {
+        {   
             success = false,
             errors = _notifications.GetNotifications().Select(n => n.Value),
         });

@@ -19,24 +19,37 @@ public class EventApiService : IEventApiService
     private readonly HttpClient _httpClient;
     private readonly ILogger<EventApiService> _logger;
     private readonly ICurrentUserService _currentUserService;
+    private readonly ITokenService _tokenService;
 
     public EventApiService(IHttpClientFactory httpClientFactory, 
                           ILogger<EventApiService> logger,
-                          ICurrentUserService currentUserService)
+                          ICurrentUserService currentUserService,
+                          ITokenService tokenService)
     {
         _httpClient = httpClientFactory.CreateClient("EventAPI");
         _logger = logger;
         _currentUserService = currentUserService;
+        _tokenService = tokenService;
     }
 
-    private void SetAuthenticationHeaders()
+    private async Task SetAuthenticationHeadersAsync()
     {
+        // Clear any existing authorization headers
+        _httpClient.DefaultRequestHeaders.Authorization = null;
+        _httpClient.DefaultRequestHeaders.Remove("X-User-Id");
+        _httpClient.DefaultRequestHeaders.Remove("X-User-Email");
+
         if (_currentUserService.IsAuthenticated)
         {
+            // Set JWT Bearer token
+            var token = await _tokenService.GetValidAccessTokenAsync();
+            if (!string.IsNullOrEmpty(token))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+
             // Add user context headers for the backend API
-            _httpClient.DefaultRequestHeaders.Remove("X-User-Id");
-            _httpClient.DefaultRequestHeaders.Remove("X-User-Email");
-            
             if (!string.IsNullOrEmpty(_currentUserService.UserId))
                 _httpClient.DefaultRequestHeaders.Add("X-User-Id", _currentUserService.UserId);
             
@@ -49,8 +62,8 @@ public class EventApiService : IEventApiService
     {
         try
         {
-            SetAuthenticationHeaders();
-            var response = await _httpClient.GetAsync("api/v1/events");
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync("api/v1/events/event-management");
             var content = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -103,8 +116,8 @@ public class EventApiService : IEventApiService
     {
         try
         {
-            SetAuthenticationHeaders();
-            var response = await _httpClient.GetAsync($"api/v1/events/{id}");
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync($"api/v1/events/event-management/{id}");
             var content = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -154,20 +167,21 @@ public class EventApiService : IEventApiService
     {
         try
         {
-            SetAuthenticationHeaders();
+            await SetAuthenticationHeadersAsync();
             var json = JsonConvert.SerializeObject(new
             {
                 title = model.Title,
                 description = model.Description,
-                date = model.Date,
-                status = 0, // Draft
-                visibility = (int)model.Visibility,
+                startDate = model.Date,
+                endDate = model.Date.AddHours(2), // Default 2-hour duration
+                status = "Draft", // The API expects string values
+                visibility = model.Visibility.ToString(),
                 organizerId = Guid.NewGuid(), // TODO: Get from authenticated user
-                venueId = model.VenueId
+                venueId = model.VenueId ?? Guid.NewGuid(),
             });
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("api/v1/events", content);
+            var response = await _httpClient.PostAsync("api/v1/events/event-management", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -220,14 +234,14 @@ public class EventApiService : IEventApiService
     {
         try
         {
-            SetAuthenticationHeaders();
-            var response = await _httpClient.DeleteAsync($"api/v1/events/{id}");
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.DeleteAsync($"api/v1/events/event-management/{id}");
 
             return new ApiResponse<bool>
             {
                 Success = response.IsSuccessStatusCode,
                 Data = response.IsSuccessStatusCode,
-                Message = response.IsSuccessStatusCode ? "Event deleted successfully" : $"Failed to delete event: {response.StatusCode}"
+                Message = response.IsSuccessStatusCode ? "Event deleted successfully" : $"Failed to delete event: {response.StatusCode}",
             };
         }
         catch (Exception ex)
@@ -236,7 +250,8 @@ public class EventApiService : IEventApiService
             return new ApiResponse<bool>
             {
                 Success = false,
-                Message = "Error connecting to the API service"
+                Message = "Error connecting to the API service",
+                Data = false,
             };
         }
     }
@@ -245,27 +260,51 @@ public class EventApiService : IEventApiService
     {
         try
         {
-            // Mock data for now - replace with actual API call when venues endpoint is available
-            var venues = new List<VenueViewModel>
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync("api/v1/Venues/venues");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
             {
-                new() { Id = Guid.NewGuid(), Name = "Conference Center A", Address = "123 Main St", Capacity = 500 },
-                new() { Id = Guid.NewGuid(), Name = "Grand Ballroom", Address = "456 Oak Ave", Capacity = 300 },
-                new() { Id = Guid.NewGuid(), Name = "Tech Hub", Address = "789 Pine St", Capacity = 150 }
-            };
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<List<VenueViewModel>>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
+                {
+                    return new ApiResponse<List<VenueViewModel>>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true 
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<List<VenueViewModel>>
+                    {
+                        Success = false,
+                        Message = errorMessage,
+                        Data = new List<VenueViewModel>()
+                    };
+                }
+            }
 
             return new ApiResponse<List<VenueViewModel>>
             {
-                Success = true,
-                Data = venues
+                Success = false,
+                Message = $"Failed to fetch venues: {response.StatusCode}",
+                Data = new List<VenueViewModel>()
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching venues");
+            _logger.LogError(ex, "Error fetching venues from API");
             return new ApiResponse<List<VenueViewModel>>
             {
                 Success = false,
-                Message = "Error fetching venues",
+                Message = "Error connecting to the API service",
                 Data = new List<VenueViewModel>()
             };
         }

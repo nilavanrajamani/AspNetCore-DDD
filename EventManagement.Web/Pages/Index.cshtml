@@ -263,30 +263,43 @@
 
             async function loadEventStatistics() {
                 try {
-                    showLoading();
+                    // Only show loading if the functions are available
+                    if (typeof showLoading === 'function') {
+                        showLoading();
+                    }
                     
                     // In a real application, this would be an API call
                     // For now, we'll simulate with setTimeout
                     setTimeout(() => {
-                        const stats = {
-                            total: Math.floor(Math.random() * 50) + 10,
-                            published: Math.floor(Math.random() * 30) + 5,
-                            upcoming: Math.floor(Math.random() * 20) + 3,
-                            venues: 3
-                        };
-                        
-                        // Animate statistics
-                        animateValue('totalEvents', 0, stats.total, 1000);
-                        animateValue('publishedEvents', 0, stats.published, 1200);
-                        animateValue('upcomingEvents', 0, stats.upcoming, 1400);
-                        animateValue('totalVenues', 0, stats.venues, 800);
-                        
-                        hideLoading();
+                        try {
+                            const stats = {
+                                total: Math.floor(Math.random() * 50) + 10,
+                                published: Math.floor(Math.random() * 30) + 5,
+                                upcoming: Math.floor(Math.random() * 20) + 3,
+                                venues: 3
+                            };
+                            
+                            // Animate statistics
+                            animateValue('totalEvents', 0, stats.total, 1000);
+                            animateValue('publishedEvents', 0, stats.published, 1200);
+                            animateValue('upcomingEvents', 0, stats.upcoming, 1400);
+                            animateValue('totalVenues', 0, stats.venues, 800);
+                        } catch (animationError) {
+                            console.error('Error animating statistics:', animationError);
+                        } finally {
+                            // Always hide loading, even if animation fails
+                            if (typeof hideLoading === 'function') {
+                                hideLoading();
+                            }
+                        }
                     }, 500);
                     
                 } catch (error) {
                     console.error('Error loading statistics:', error);
-                    hideLoading();
+                    // Always hide loading on error
+                    if (typeof hideLoading === 'function') {
+                        hideLoading();
+                    }
                 }
             }
 

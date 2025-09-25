@@ -134,7 +134,8 @@ let loadingTimeout;
 window.showLoading = function(timeoutMs = 10000) {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) {
-        spinner.style.display = 'flex';
+        spinner.classList.add('show');
+        window.loadingStartTime = Date.now();
         
         // Clear any existing timeout
         if (loadingTimeout) {
@@ -152,7 +153,8 @@ window.showLoading = function(timeoutMs = 10000) {
 window.hideLoading = function() {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) {
-        spinner.style.display = 'none';
+        spinner.classList.remove('show');
+        window.loadingStartTime = null;
         
         // Clear the timeout since we're manually hiding
         if (loadingTimeout) {
@@ -182,4 +184,48 @@ window.showInfo = function(title, message) {
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure loading spinner is hidden by default
     window.hideLoading();
+    
+    // Force hide after a short delay in case of any async operations
+    setTimeout(() => {
+        window.hideLoading();
+    }, 100);
 });
+
+// Also hide on window load as a fallback
+window.addEventListener('load', function() {
+    window.hideLoading();
+});
+
+// Hide spinner when navigating away from page
+window.addEventListener('beforeunload', function() {
+    window.hideLoading();
+});
+
+// Global error handler to ensure loading spinner is hidden on errors
+window.addEventListener('error', function(event) {
+    console.error('Global error caught, hiding loading spinner:', event.error);
+    window.hideLoading();
+});
+
+// Unhandled promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection caught, hiding loading spinner:', event.reason);
+    window.hideLoading();
+});
+
+// Periodic check to ensure loading spinner doesn't get stuck
+setInterval(function() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner && spinner.classList.contains('show')) {
+        // If spinner has been showing for more than 30 seconds, force hide it
+        if (!window.loadingStartTime) {
+            window.loadingStartTime = Date.now();
+        } else if (Date.now() - window.loadingStartTime > 30000) {
+            console.warn('Loading spinner stuck for more than 30 seconds, force hiding');
+            window.hideLoading();
+            window.loadingStartTime = null;
+        }
+    } else {
+        window.loadingStartTime = null;
+    }
+}, 5000); // Check every 5 seconds

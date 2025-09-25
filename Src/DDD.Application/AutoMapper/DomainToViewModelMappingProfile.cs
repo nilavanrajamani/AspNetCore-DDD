@@ -11,5 +11,6 @@ public class DomainToViewModelMappingProfile : Profile
     {
         CreateMap<Customer, CustomerViewModel>();
         CreateMap<Event, EventViewModel>();
+        CreateMap<Venue, VenueViewModel>();
     }
 }

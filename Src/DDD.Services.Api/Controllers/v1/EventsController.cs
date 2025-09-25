@@ -4,7 +4,6 @@ using DDD.Application.Interfaces;
 using DDD.Application.ViewModels;
 using DDD.Domain.Core.Bus;
 using DDD.Domain.Core.Notifications;
-using DDD.Infra.CrossCutting.Identity.Authorization;
 
 using MediatR;
 
@@ -46,7 +45,7 @@ public class EventsController : ApiController
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanWriteCustomerData", Roles = Roles.Admin)]
+    [Authorize(Policy = "CanModifyEventsData")]
     [Route("event-management")]
     public IActionResult Post([FromBody] EventViewModel eventViewModel)
     {
@@ -59,6 +58,32 @@ public class EventsController : ApiController
         _eventAppService.Register(eventViewModel);
 
         return Response(eventViewModel);
+    }
+
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}")]
+    public IActionResult Put(Guid id, [FromBody] EventViewModel eventViewModel)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(eventViewModel);
+        }
+
+        eventViewModel.Id = id;
+        _eventAppService.Update(eventViewModel);
+
+        return Response(eventViewModel);
+    }
+
+    [HttpDelete]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}")]
+    public IActionResult Delete(Guid id)
+    {
+        _eventAppService.Remove(id);
+        return Response();
     }
 
     [HttpGet]

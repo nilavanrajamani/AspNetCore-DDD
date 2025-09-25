@@ -76,8 +76,14 @@ public static class AuthExtension
                 .RequireRole("Admin")
                 .AddRequirements(new ClaimRequirement("Customers_Remove", "Remove"))
                 .Build();
+            var eventsModifyPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .RequireRole("Admin")
+                .AddRequirements(new ClaimRequirement("Events_Modify", "Modify"))
+                .Build();
             options.AddPolicy("CanWriteCustomerData", policy1);
             options.AddPolicy("CanRemoveCustomerData", policy2);
+            options.AddPolicy("CanModifyEventsData", eventsModifyPolicy);
         });
 
         return services;
