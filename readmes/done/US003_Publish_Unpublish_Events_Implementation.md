@@ -1,4 +1,3 @@
-````markdown
 # US003: Publish/Unpublish Events - Implementation Documentation
 
 **Date Completed:** September 26, 2025  
