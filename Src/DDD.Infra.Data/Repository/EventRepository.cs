@@ -57,4 +57,38 @@ public class EventRepository : Repository<Event>, IEventRepository
         return _dbSet.AsNoTracking()
             .FirstOrDefault(e => e.OrganizerId == organizerId && e.Title == title);
     }
+
+    public IEnumerable<Event> GetPublishedEvents()
+    {
+        return _dbSet
+            .Include(e => e.PricingTiers)
+            .Where(e => e.Status == EventStatus.Published)
+            .ToList();
+    }
+
+    public IEnumerable<Event> GetEventsByStatus(EventStatus status)
+    {
+        return _dbSet
+            .Include(e => e.PricingTiers)
+            .Where(e => e.Status == status)
+            .ToList();
+    }
+
+    public IEnumerable<Event> GetEventsByOrganizer(Guid organizerId)
+    {
+        return _dbSet
+            .Include(e => e.PricingTiers)
+            .Where(e => e.OrganizerId == organizerId)
+            .OrderByDescending(e => e.CreatedAt)
+            .ToList();
+    }
+
+    public IEnumerable<Event> GetEventsByOrganizerAndStatus(Guid organizerId, EventStatus status)
+    {
+        return _dbSet
+            .Include(e => e.PricingTiers)
+            .Where(e => e.OrganizerId == organizerId && e.Status == status)
+            .OrderByDescending(e => e.CreatedAt)
+            .ToList();
+    }
 }

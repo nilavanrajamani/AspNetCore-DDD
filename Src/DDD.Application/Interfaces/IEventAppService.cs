@@ -22,4 +22,8 @@ public interface IEventAppService : IDisposable
     void SetCapacityAndPricing(SetEventCapacityViewModel capacityViewModel);
 
     SetEventCapacityViewModel GetCapacityAndPricing(Guid eventId);
+
+    void PublishEvent(Guid eventId);
+
+    void UnpublishEvent(Guid eventId, string reason);
 }

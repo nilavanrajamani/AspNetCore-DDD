@@ -55,4 +55,58 @@ public class DetailsModel : PageModel
 
         return Page();
     }
+
+    public async Task<IActionResult> OnPostPublishAsync(Guid id)
+    {
+        try
+        {
+            var response = await _eventApiService.PublishEventAsync(id);
+            
+            if (response.Success)
+            {
+                TempData["Success"] = response.Message;
+            }
+            else
+            {
+                TempData["Error"] = response.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "An error occurred while publishing the event.";
+            _logger.LogError(ex, "Error publishing event {EventId}", id);
+        }
+
+        return RedirectToPage("./Details", new { id });
+    }
+
+    public async Task<IActionResult> OnPostUnpublishAsync(Guid id, string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            TempData["Error"] = "A reason is required to unpublish an event.";
+            return RedirectToPage("./Details", new { id });
+        }
+
+        try
+        {
+            var response = await _eventApiService.UnpublishEventAsync(id, reason);
+            
+            if (response.Success)
+            {
+                TempData["Success"] = response.Message;
+            }
+            else
+            {
+                TempData["Error"] = response.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "An error occurred while unpublishing the event.";
+            _logger.LogError(ex, "Error unpublishing event {EventId}", id);
+        }
+
+        return RedirectToPage("./Details", new { id });
+    }
 }

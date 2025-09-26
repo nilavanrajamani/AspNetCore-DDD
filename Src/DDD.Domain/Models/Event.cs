@@ -119,8 +119,20 @@ public class Event : EntityAudit
         if (Status != EventStatus.Draft)
             throw new InvalidOperationException("Only draft events can be published");
 
+        ValidateEventCompleteness();
+
         Status = EventStatus.Published;
         Visibility = EventVisibility.Public;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Unpublish(string reason)
+    {
+        if (Status != EventStatus.Published)
+            throw new InvalidOperationException("Only published events can be unpublished");
+
+        Status = EventStatus.Draft;
+        Visibility = EventVisibility.Private;
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -134,6 +146,35 @@ public class Event : EntityAudit
 
         Status = EventStatus.Cancelled;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    private void ValidateEventCompleteness()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(Title))
+            errors.Add("Event must have a title");
+
+        if (string.IsNullOrWhiteSpace(Description))
+            errors.Add("Event must have a description");
+
+        if (VenueId == Guid.Empty)
+            errors.Add("Event must have a venue");
+
+        if (!TotalCapacity.HasValue || TotalCapacity <= 0)
+            errors.Add("Event must have valid capacity");
+
+        if (!_pricingTiers.Any())
+            errors.Add("Event must have pricing tiers");
+
+        if (StartDate <= DateTime.UtcNow)
+            errors.Add("Event must have future start date");
+
+        if (EndDate <= StartDate)
+            errors.Add("Event end date must be after start date");
+
+        if (errors.Any())
+            throw new InvalidOperationException($"Cannot publish incomplete event: {string.Join(", ", errors)}");
     }
 }
 

@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\DDD.Application\DDD.Application.csproj" />
+    <ProjectReference Include="..\..\Src\DDD.Domain\DDD.Domain.csproj" />
+    <ProjectReference Include="..\..\Src\DDD.Domain.Core\DDD.Domain.Core.csproj" />
   </ItemGroup>
 
 </Project>

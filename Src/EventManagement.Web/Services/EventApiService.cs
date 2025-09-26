@@ -15,6 +15,10 @@ public interface IEventApiService
     // Capacity Management methods for US002
     Task<ApiResponse<bool>> SetEventCapacityAndPricingAsync(SetEventCapacityViewModel model);
     Task<ApiResponse<SetEventCapacityViewModel>> GetEventCapacityAndPricingAsync(Guid eventId);
+    
+    // Publish/Unpublish methods for US003
+    Task<ApiResponse<bool>> PublishEventAsync(Guid eventId);
+    Task<ApiResponse<bool>> UnpublishEventAsync(Guid eventId, string reason);
 }
 
 public class EventApiService : IEventApiService
@@ -432,6 +436,130 @@ public class EventApiService : IEventApiService
             {
                 Success = false,
                 Message = "Error connecting to the API service"
+            };
+        }
+    }
+
+    // Publish/Unpublish implementation for US003
+    public async Task<ApiResponse<bool>> PublishEventAsync(Guid eventId)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.PutAsync($"api/v1/events/event-management/{eventId}/publish", null);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Event published successfully",
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to publish event: {response.StatusCode}",
+                Errors = new List<string> { responseContent },
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error publishing event {EventId}", eventId);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    public async Task<ApiResponse<bool>> UnpublishEventAsync(Guid eventId, string reason)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var payload = new { reason = reason };
+            var json = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PutAsync($"api/v1/events/event-management/{eventId}/unpublish", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Event unpublished successfully",
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to unpublish event: {response.StatusCode}",
+                Errors = new List<string> { responseContent },
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unpublishing event {EventId}", eventId);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
             };
         }
     }

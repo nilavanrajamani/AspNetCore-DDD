@@ -15,7 +15,9 @@ namespace DDD.Domain.CommandHandlers;
 
 public class EventCommandHandler : CommandHandler,
     IRequestHandler<CreateEventCommand, bool>,
-    IRequestHandler<SetEventCapacityCommand, bool>
+    IRequestHandler<SetEventCapacityCommand, bool>,
+    IRequestHandler<PublishEventCommand, bool>,
+    IRequestHandler<UnpublishEventCommand, bool>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IVenueRepository _venueRepository;
@@ -121,6 +123,82 @@ public class EventCommandHandler : CommandHandler,
                     eventEntity.Id,
                     message.TotalCapacity,
                     message.PricingTiers.Count));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(PublishEventCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.Id);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            eventEntity.Publish();
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                _bus.RaiseEvent(new EventPublishedEvent(
+                    eventEntity.Id,
+                    eventEntity.OrganizerId,
+                    eventEntity.Title,
+                    eventEntity.StartDate,
+                    eventEntity.TotalCapacity ?? 0));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(UnpublishEventCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.Id);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            eventEntity.Unpublish(message.Reason);
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                _bus.RaiseEvent(new EventUnpublishedEvent(
+                    eventEntity.Id,
+                    eventEntity.OrganizerId,
+                    message.Reason));
             }
 
             return Task.FromResult(true);

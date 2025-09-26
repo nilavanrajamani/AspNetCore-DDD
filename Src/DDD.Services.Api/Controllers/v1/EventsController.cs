@@ -123,4 +123,28 @@ public class EventsController : ApiController
 
         return Response(capacityViewModel);
     }
+
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/publish")]
+    public IActionResult PublishEvent(Guid id)
+    {
+        _eventAppService.PublishEvent(id);
+        return Response();
+    }
+
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/unpublish")]
+    public IActionResult UnpublishEvent(Guid id, [FromBody] UnpublishEventRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(request);
+        }
+
+        _eventAppService.UnpublishEvent(id, request.Reason);
+        return Response();
+    }
 }

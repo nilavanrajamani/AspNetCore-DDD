@@ -82,6 +82,33 @@ public class EventAppService : IEventAppService
         return _mapper.Map<SetEventCapacityViewModel>(eventEntity);
     }
 
+    public void PublishEvent(Guid eventId)
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        var publishCommand = new PublishEventCommand(eventId);
+        _bus.SendCommand(publishCommand);
+    }
+
+    public void UnpublishEvent(Guid eventId, string reason)
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Reason cannot be null, empty, or whitespace", nameof(reason));
+        }
+
+        var unpublishCommand = new UnpublishEventCommand(eventId, reason);
+        _bus.SendCommand(unpublishCommand);
+    }
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);

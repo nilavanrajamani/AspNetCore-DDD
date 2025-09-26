@@ -146,4 +146,76 @@ public class EventAppServiceTests
         Assert.Equal(viewModel.TotalCapacity, capturedCommand.TotalCapacity);
         Assert.Equal(expectedPricingTiers.Count, capturedCommand.PricingTiers.Count);
     }
+
+    [Fact]
+    public void PublishEvent_WithValidEventId_SendsPublishCommand()
+    {
+        // Arrange
+        var eventId = Guid.NewGuid();
+
+        // Act
+        _eventAppService.PublishEvent(eventId);
+
+        // Assert
+        _mediatorHandlerMock.Verify(
+            x => x.SendCommand(It.Is<PublishEventCommand>(cmd => cmd.Id == eventId)),
+            Times.Once);
+    }
+
+    [Fact]
+    public void PublishEvent_WithEmptyEventId_ThrowsArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() =>
+            _eventAppService.PublishEvent(Guid.Empty));
+    }
+
+    [Fact]
+    public void UnpublishEvent_WithValidParameters_SendsUnpublishCommand()
+    {
+        // Arrange
+        var eventId = Guid.NewGuid();
+        var reason = "Content review required";
+
+        // Act
+        _eventAppService.UnpublishEvent(eventId, reason);
+
+        // Assert
+        _mediatorHandlerMock.Verify(
+            x => x.SendCommand(It.Is<UnpublishEventCommand>(cmd => 
+                cmd.Id == eventId && cmd.Reason == reason)),
+            Times.Once);
+    }
+
+    [Fact]
+    public void UnpublishEvent_WithEmptyEventId_ThrowsArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() =>
+            _eventAppService.UnpublishEvent(Guid.Empty, "Valid reason"));
+    }
+
+    [Fact]
+    public void UnpublishEvent_WithNullReason_ThrowsArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() =>
+            _eventAppService.UnpublishEvent(Guid.NewGuid(), null));
+    }
+
+    [Fact]
+    public void UnpublishEvent_WithEmptyReason_ThrowsArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() =>
+            _eventAppService.UnpublishEvent(Guid.NewGuid(), string.Empty));
+    }
+
+    [Fact]
+    public void UnpublishEvent_WithWhitespaceReason_ThrowsArgumentException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() =>
+            _eventAppService.UnpublishEvent(Guid.NewGuid(), "   "));
+    }
 }

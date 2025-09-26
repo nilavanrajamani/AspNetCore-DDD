@@ -48,6 +48,25 @@
 </div>
 
 <div class="container">
+    <!-- Success/Error Messages from TempData -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     @if (Model.IsError)
     {
         <div class="alert alert-danger" role="alert">
@@ -412,14 +431,63 @@
     }
 </style>
 
+<!-- Anti-forgery token for POST operations -->
+<form style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
 @section Scripts {
     <script>
         function publishEvent(eventId) {
-            showInfo('Publishing Event', 'This feature will be implemented in the next phase.');
+            if (confirm('Are you sure you want to publish this event? This will make it visible to attendees.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '?handler=Publish&id=' + eventId;
+                
+                // Add anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token.value;
+                    form.appendChild(tokenInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
 
         function unpublishEvent(eventId) {
-            showInfo('Unpublishing Event', 'This feature will be implemented in the next phase.');
+            const reason = prompt('Please provide a reason for unpublishing this event:');
+            if (reason && reason.trim()) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '?handler=Unpublish&id=' + eventId;
+                
+                // Add reason field
+                const reasonInput = document.createElement('input');
+                reasonInput.type = 'hidden';
+                reasonInput.name = 'reason';
+                reasonInput.value = reason.trim();
+                form.appendChild(reasonInput);
+                
+                // Add anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token.value;
+                    form.appendChild(tokenInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            } else if (reason !== null) {
+                showError('Invalid Input', 'A reason is required to unpublish an event.');
+            }
         }
 
         function cancelEvent(eventId) {
