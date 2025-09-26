@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 using DDD.Domain.Core.Models;
 
@@ -6,6 +8,8 @@ namespace DDD.Domain.Models;
 
 public class Event : EntityAudit
 {
+    private readonly List<PricingTier> _pricingTiers = new();
+
     public Event(Guid id, string title, string description, Guid organizerId, Guid venueId, DateTime startDate, DateTime endDate)
     {
         Id = id;
@@ -41,6 +45,10 @@ public class Event : EntityAudit
 
     public EventVisibility Visibility { get; private set; }
 
+    public int? TotalCapacity { get; private set; }
+
+    public IReadOnlyList<PricingTier> PricingTiers => _pricingTiers.AsReadOnly();
+
     public void UpdateDetails(string title, string description, DateTime startDate, DateTime endDate)
     {
         Title = title;
@@ -48,6 +56,62 @@ public class Event : EntityAudit
         StartDate = startDate;
         EndDate = endDate;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetCapacityAndPricing(int totalCapacity, IEnumerable<PricingTierDefinition> pricingTiers)
+    {
+        if (Status != EventStatus.Draft)
+            throw new InvalidOperationException("Cannot modify capacity after event is published");
+
+        var tiersList = pricingTiers.ToList();
+        var totalTierCapacity = tiersList.Sum(t => t.Capacity);
+
+        if (totalTierCapacity != totalCapacity)
+            throw new InvalidOperationException("Pricing tier capacities must sum to total capacity");
+
+        TotalCapacity = totalCapacity;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ReplacePricingTiers(IEnumerable<PricingTierDefinition> pricingTiers)
+    {
+        // Don't clear and re-add - instead, work with EF more explicitly
+        // This method will be called by the repository to handle the collection properly
+        _pricingTiers.Clear();
+
+        foreach (var tierDef in pricingTiers)
+        {
+            _pricingTiers.Add(new PricingTier(
+                Guid.NewGuid(),
+                Id,
+                tierDef.Name,
+                tierDef.Price,
+                tierDef.Currency,
+                tierDef.Capacity,
+                tierDef.SaleStartDate,
+                tierDef.SaleEndDate));
+        }
+    }
+
+    public bool HasAvailableCapacity(int requestedQuantity = 1)
+    {
+        if (!TotalCapacity.HasValue)
+            return false;
+
+        var reservedCapacity = _pricingTiers.Sum(t => t.Capacity - t.AvailableCapacity);
+        return reservedCapacity + requestedQuantity <= TotalCapacity.Value;
+    }
+
+    public PricingTier GetAvailablePricingTier(string tierName, int quantity)
+    {
+        var tier = _pricingTiers.FirstOrDefault(t => t.Name == tierName);
+        if (tier == null)
+            throw new InvalidOperationException($"Pricing tier '{tierName}' not found");
+
+        if (!tier.CanBookTickets(quantity))
+            throw new InvalidOperationException($"Cannot book {quantity} tickets for tier '{tierName}'");
+
+        return tier;
     }
 
     public void Publish()
@@ -78,12 +142,12 @@ public enum EventStatus
     Draft,
     Published,
     Cancelled,
-    Completed
+    Completed,
 }
 
 public enum EventVisibility
 {
     Private,
     Public,
-    InviteOnly
+    InviteOnly,
 }

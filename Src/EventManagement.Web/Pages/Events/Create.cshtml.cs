@@ -25,8 +25,9 @@ public class CreateModel : PageModel
     {
         // Set default date/time without seconds or milliseconds
         var defaultDateTime = DateTime.Now.AddDays(7);
-        Event.Date = new DateTime(defaultDateTime.Year, defaultDateTime.Month, defaultDateTime.Day, 
-                                 defaultDateTime.Hour, defaultDateTime.Minute, 0);
+        Event.StartDate = new DateTime(defaultDateTime.Year, defaultDateTime.Month, defaultDateTime.Day, 
+                                      defaultDateTime.Hour, defaultDateTime.Minute, 0);
+        Event.EndDate = Event.StartDate.AddHours(2); // Default 2-hour duration
         
         await LoadVenues();
     }
@@ -42,9 +43,9 @@ public class CreateModel : PageModel
         try
         {
             // Validate business rules
-            if (Event.Date <= DateTime.Now)
+            if (Event.StartDate <= DateTime.Now)
             {
-                ModelState.AddModelError("Event.Date", "Event date must be in the future.");
+                ModelState.AddModelError("Event.StartDate", "Event start date must be in the future.");
                 await LoadVenues();
                 return Page();
             }

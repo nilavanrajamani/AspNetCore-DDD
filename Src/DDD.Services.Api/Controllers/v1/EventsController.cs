@@ -93,4 +93,34 @@ public class EventsController : ApiController
     {
         return Response(_eventAppService.GetAll(skip, take));
     }
+
+    [HttpGet]
+    [AllowAnonymous]
+    [Route("event-management/{id:guid}/capacity")]
+    public IActionResult GetCapacityAndPricing(Guid id)
+    {
+        var capacityViewModel = _eventAppService.GetCapacityAndPricing(id);
+        if (capacityViewModel == null)
+        {
+            return NotFound();
+        }
+        return Response(capacityViewModel);
+    }
+
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/capacity")]
+    public IActionResult SetCapacityAndPricing(Guid id, [FromBody] SetEventCapacityViewModel capacityViewModel)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(capacityViewModel);
+        }
+
+        capacityViewModel.EventId = id;
+        _eventAppService.SetCapacityAndPricing(capacityViewModel);
+
+        return Response(capacityViewModel);
+    }
 }

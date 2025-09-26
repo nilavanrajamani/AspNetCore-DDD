@@ -1,7 +1,6 @@
 using EventManagement.Web.Models;
 using Newtonsoft.Json;
 using System.Text;
-using System.Net.Http.Headers;
 
 namespace EventManagement.Web.Services;
 
@@ -12,6 +11,10 @@ public interface IEventApiService
     Task<ApiResponse<EventViewModel>> CreateEventAsync(CreateEventViewModel model);
     Task<ApiResponse<bool>> DeleteEventAsync(Guid id);
     Task<ApiResponse<List<VenueViewModel>>> GetVenuesAsync();
+    
+    // Capacity Management methods for US002
+    Task<ApiResponse<bool>> SetEventCapacityAndPricingAsync(SetEventCapacityViewModel model);
+    Task<ApiResponse<SetEventCapacityViewModel>> GetEventCapacityAndPricingAsync(Guid eventId);
 }
 
 public class EventApiService : IEventApiService
@@ -172,8 +175,8 @@ public class EventApiService : IEventApiService
             {
                 title = model.Title,
                 description = model.Description,
-                startDate = model.Date,
-                endDate = model.Date.AddHours(2), // Default 2-hour duration
+                startDate = model.StartDate,
+                endDate = model.EndDate.Year > 1900 ? model.EndDate : model.StartDate.AddHours(2), // Use EndDate if provided, otherwise default 2-hour duration
                 status = "Draft", // The API expects string values
                 visibility = model.Visibility.ToString(),
                 organizerId = Guid.NewGuid(), // TODO: Get from authenticated user
@@ -306,6 +309,129 @@ public class EventApiService : IEventApiService
                 Success = false,
                 Message = "Error connecting to the API service",
                 Data = new List<VenueViewModel>()
+            };
+        }
+    }
+
+    // Capacity Management implementation for US002
+    public async Task<ApiResponse<bool>> SetEventCapacityAndPricingAsync(SetEventCapacityViewModel model)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var payload = new
+            {
+                eventId = model.EventId,
+                totalCapacity = model.TotalCapacity,
+                pricingTiers = model.PricingTiers.Select(pt => new
+                {
+                    name = pt.Name,
+                    price = pt.Price,
+                    currency = pt.Currency,
+                    capacity = pt.Capacity,
+                    saleStartDate = pt.SaleStartDate,
+                    saleEndDate = pt.SaleEndDate
+                }).ToList()
+            };
+
+            var json = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PutAsync($"api/v1/events/event-management/{model.EventId}/capacity", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Event capacity and pricing configured successfully"
+                };
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to set event capacity: {response.StatusCode}",
+                Errors = new List<string> { responseContent }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting event capacity for event {EventId}", model.EventId);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service"
+            };
+        }
+    }
+
+    public async Task<ApiResponse<SetEventCapacityViewModel>> GetEventCapacityAndPricingAsync(Guid eventId)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync($"api/v1/events/event-management/{eventId}/capacity");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<SetEventCapacityViewModel>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
+                {
+                    return new ApiResponse<SetEventCapacityViewModel>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<SetEventCapacityViewModel>
+                    {
+                        Success = false,
+                        Message = errorMessage
+                    };
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // No capacity configuration exists yet
+                return new ApiResponse<SetEventCapacityViewModel>
+                {
+                    Success = true,
+                    Data = new SetEventCapacityViewModel
+                    {
+                        EventId = eventId,
+                        TotalCapacity = 0,
+                        PricingTiers = new List<PricingTierViewModel>()
+                    }
+                };
+            }
+
+            return new ApiResponse<SetEventCapacityViewModel>
+            {
+                Success = false,
+                Message = $"Failed to get event capacity: {response.StatusCode}"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching event capacity for event {EventId}", eventId);
+            return new ApiResponse<SetEventCapacityViewModel>
+            {
+                Success = false,
+                Message = "Error connecting to the API service"
             };
         }
     }

@@ -56,12 +56,14 @@ public class NativeInjectorBootStrapper
         services.AddScoped<INotificationHandler<CustomerUpdatedEvent>, CustomerEventHandler>();
         services.AddScoped<INotificationHandler<CustomerRemovedEvent>, CustomerEventHandler>();
         services.AddScoped<INotificationHandler<EventCreatedEvent>, EventEventHandler>();
+        services.AddScoped<INotificationHandler<EventCapacitySetEvent>, EventEventHandler>();
 
         // Domain - Commands
         services.AddScoped<IRequestHandler<RegisterNewCustomerCommand, bool>, CustomerCommandHandler>();
         services.AddScoped<IRequestHandler<UpdateCustomerCommand, bool>, CustomerCommandHandler>();
         services.AddScoped<IRequestHandler<RemoveCustomerCommand, bool>, CustomerCommandHandler>();
         services.AddScoped<IRequestHandler<CreateEventCommand, bool>, EventCommandHandler>();
+        services.AddScoped<IRequestHandler<SetEventCapacityCommand, bool>, EventCommandHandler>();
 
         // Domain - Providers, 3rd parties
         services.AddScoped<IHttpProvider, HttpProvider>();

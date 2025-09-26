@@ -26,6 +26,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Venue> Venues { get; set; }
 
+    public DbSet<PricingTier> PricingTiers { get; set; }
+
     // public override int SaveChanges()
     // {
     //     OnBeforeSaving();
@@ -55,6 +57,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CustomerMap());
         modelBuilder.ApplyConfiguration(new EventMap());
         modelBuilder.ApplyConfiguration(new VenueMap());
+        modelBuilder.ApplyConfiguration(new PricingTierMap());
 
         base.OnModelCreating(modelBuilder);
     }

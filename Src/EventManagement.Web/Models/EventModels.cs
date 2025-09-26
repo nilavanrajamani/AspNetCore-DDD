@@ -20,7 +20,8 @@ public class EventViewModel
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public EventStatus Status { get; set; }
     public EventVisibility Visibility { get; set; }
     public Guid OrganizerId { get; set; }
@@ -28,15 +29,34 @@ public class EventViewModel
     public string? VenueName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    
+    // Capacity and Pricing Properties
+    public int? TotalCapacity { get; set; }
+    public List<PricingTierViewModel> PricingTiers { get; set; } = new();
+    
+    // Helper property for backward compatibility and display purposes
+    public DateTime Date 
+    { 
+        get => StartDate; 
+        set => StartDate = value; 
+    }
 }
 
 public class CreateEventViewModel
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
     public EventVisibility Visibility { get; set; } = EventVisibility.Public;
     public Guid? VenueId { get; set; }
+    
+    // Helper property for backward compatibility
+    public DateTime Date 
+    { 
+        get => StartDate; 
+        set => StartDate = value; 
+    }
 }
 
 public class VenueViewModel

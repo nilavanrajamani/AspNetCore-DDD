@@ -152,11 +152,15 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <i class="fas fa-calendar me-1"></i>
-                                        @eventItem.Date.ToString("MMM dd, yyyy")
+                                        @eventItem.StartDate.ToString("MMM dd, yyyy")
                                     </div>
                                     <div class="col-6">
                                         <i class="fas fa-clock me-1"></i>
-                                        @eventItem.Date.ToString("HH:mm")
+                                        @eventItem.StartDate.ToString("HH:mm")
+                                        @if (eventItem.StartDate != eventItem.EndDate)
+                                        {
+                                            <span> - @eventItem.EndDate.ToString("HH:mm")</span>
+                                        }
                                     </div>
                                 </div>
                                 @if (!string.IsNullOrEmpty(eventItem.VenueName))

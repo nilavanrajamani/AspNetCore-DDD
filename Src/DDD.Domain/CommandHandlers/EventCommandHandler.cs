@@ -14,7 +14,8 @@ using MediatR;
 namespace DDD.Domain.CommandHandlers;
 
 public class EventCommandHandler : CommandHandler,
-    IRequestHandler<CreateEventCommand, bool>
+    IRequestHandler<CreateEventCommand, bool>,
+    IRequestHandler<SetEventCapacityCommand, bool>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IVenueRepository _venueRepository;
@@ -81,6 +82,54 @@ public class EventCommandHandler : CommandHandler,
         }
 
         return Task.FromResult(true);
+    }
+
+    public Task<bool> Handle(SetEventCapacityCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        // Get the event to update
+        var eventEntity = _eventRepository.GetById(message.Id);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        // Check if event is in draft status
+        if (eventEntity.Status != EventStatus.Draft)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "Cannot modify capacity after event is published."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            // Set capacity (scalar properties only)
+            eventEntity.SetCapacityAndPricing(message.TotalCapacity, message.PricingTiers);
+            
+            // Handle pricing tiers collection replacement through repository
+            _eventRepository.UpdateEventPricingTiers(eventEntity, message.PricingTiers);
+            
+            if (Commit())
+            {
+                _bus.RaiseEvent(new EventCapacitySetEvent(
+                    eventEntity.Id,
+                    message.TotalCapacity,
+                    message.PricingTiers.Count));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
     }
 
     public void Dispose()

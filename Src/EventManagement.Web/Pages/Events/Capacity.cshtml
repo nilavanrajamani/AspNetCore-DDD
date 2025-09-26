@@ -1,0 +1,281 @@
+@page "{id:guid}/capacity"
+@model EventManagement.Web.Pages.Events.CapacityModel
+@{
+    ViewData["Title"] = $"Capacity & Pricing - {Model.Event.Title}";
+}
+
+<div class="page-header bg-gradient-primary text-white">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent mb-2">
+                <li class="breadcrumb-item"><a href="/Events" class="text-white-50">Events</a></li>
+                <li class="breadcrumb-item"><a href="/Events/Details/@Model.Event.Id" class="text-white-50">@Model.Event.Title</a></li>
+                <li class="breadcrumb-item active text-white">Capacity & Pricing</li>
+            </ol>
+        </nav>
+        <h1 class="h3 mb-1">
+            <i class="fas fa-users me-2"></i>
+            Event Capacity & Pricing Configuration
+        </h1>
+        <p class="mb-0 text-white-75">Configure total capacity and pricing tiers for your event</p>
+    </div>
+</div>
+
+<div class="container">
+    @if (Model.IsError)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @Model.Message
+        </div>
+    }
+    else
+    {
+        <form method="post" id="capacityPricingForm">
+            <input type="hidden" asp-for="CapacityConfiguration.EventId" />
+            
+            <!-- Validation Summary -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger" id="validationSummary">
+                    <h6 class="alert-heading mb-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Please correct the following errors:
+                    </h6>
+                    <ul class="mb-0">
+                        @foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@modelError.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <!-- Total Capacity Configuration Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light border-bottom-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calculator text-primary me-2"></i>
+                        Total Event Capacity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label asp-for="CapacityConfiguration.TotalCapacity" class="form-label fw-semibold">
+                                Total Capacity <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-hashtag text-muted"></i>
+                                </span>
+                                <input asp-for="CapacityConfiguration.TotalCapacity" 
+                                       type="number" 
+                                       class="form-control form-control-lg" 
+                                       id="TotalCapacity" 
+                                       min="1" 
+                                       max="50000" 
+                                       placeholder="e.g., 500">
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle text-info me-1"></i>
+                                Maximum number of attendees for this event
+                            </div>
+                            <span asp-validation-for="CapacityConfiguration.TotalCapacity" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="capacity-summary p-3 bg-light rounded mt-4 mt-md-0">
+                                <h6 class="mb-2 text-muted">Capacity Summary</h6>
+                                <div class="d-flex justify-content-between">
+                                    <span>Total Capacity:</span>
+                                    <span class="fw-bold text-primary" id="capacitySummaryTotal">@Model.CapacityConfiguration.TotalCapacity.ToString("N0")</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Assigned to Tiers:</span>
+                                    <span class="fw-bold" id="capacitySummaryAssigned">@Model.CapacityConfiguration.PricingTiers.Sum(pt => pt.Capacity).ToString("N0")</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Available:</span>
+                                    <span class="fw-bold" id="capacitySummaryAvailable">@((Model.CapacityConfiguration.TotalCapacity - Model.CapacityConfiguration.PricingTiers.Sum(pt => pt.Capacity)).ToString("N0"))</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing Tiers Configuration Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light border-bottom-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tags text-primary me-2"></i>
+                            Pricing Tiers
+                        </h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="addPricingTier">
+                            <i class="fas fa-plus me-1"></i>
+                            Add Pricing Tier
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="pricingTiersContainer">
+                        @for (int i = 0; i < Model.CapacityConfiguration.PricingTiers.Count; i++)
+                        {
+                            @await Html.PartialAsync("_PricingTierForm", Model.CapacityConfiguration.PricingTiers[i], new ViewDataDictionary(ViewData) { { "Index", i } })
+                        }
+                    </div>
+                    
+                    <!-- Empty state when no tiers exist -->
+                    <div id="emptyPricingTiers" class="text-center py-5 text-muted" style="@(Model.CapacityConfiguration.PricingTiers.Any() ? "display: none;" : "")">
+                        <i class="fas fa-tag fa-3x mb-3 text-muted"></i>
+                        <h6>No Pricing Tiers Configured</h6>
+                        <p>Click "Add Pricing Tier" to create your first pricing tier</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Preview Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light border-bottom-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        Revenue Projection
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="h4 mb-0 text-success" id="maxRevenue">$@Model.GetMaximumRevenue().ToString("N2")</div>
+                            <small class="text-muted">Maximum Revenue</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 mb-0 text-info" id="avgPrice">$@Model.GetAveragePrice().ToString("N2")</div>
+                            <small class="text-muted">Average Price</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 mb-0 text-warning" id="minPrice">$@Model.GetMinimumPrice().ToString("N2")</div>
+                            <small class="text-muted">Minimum Price</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="h4 mb-0 text-primary" id="maxPrice">$@Model.GetMaximumPrice().ToString("N2")</div>
+                            <small class="text-muted">Maximum Price</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons Section -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="/Events/Details/@Model.Event.Id" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Back to Event
+                            </a>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary me-2" id="previewCapacity" data-bs-toggle="modal" data-bs-target="#capacityPreviewModal">
+                                <i class="fas fa-eye me-1"></i>
+                                Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="saveCapacityPricing">
+                                <i class="fas fa-save me-1"></i>
+                                Save Configuration
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    }
+</div>
+
+<!-- Configuration Preview Modal -->
+<div class="modal fade" id="capacityPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>
+                    Capacity & Pricing Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Event Overview</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Total Capacity:</td>
+                                <td class="fw-bold" id="previewTotalCapacity">-</td>
+                            </tr>
+                            <tr>
+                                <td>Pricing Tiers:</td>
+                                <td class="fw-bold" id="previewTierCount">-</td>
+                            </tr>
+                            <tr>
+                                <td>Price Range:</td>
+                                <td class="fw-bold" id="previewPriceRange">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Revenue Potential</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Maximum Revenue:</td>
+                                <td class="fw-bold text-success" id="previewMaxRevenue">-</td>
+                            </tr>
+                            <tr>
+                                <td>Average Price:</td>
+                                <td class="fw-bold" id="previewAvgPrice">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6 class="text-muted mb-3">Pricing Tiers Breakdown</h6>
+                <div id="previewTiersList">
+                    <!-- Dynamic tier summary will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" class="btn btn-primary" id="saveFromPreview">
+                    <i class="fas fa-save me-1"></i>
+                    Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="savingOverlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Saving configuration...</span>
+        </div>
+        <p class="mt-2 mb-0">Saving capacity configuration...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/capacity-pricing-manager.js"></script>
+    <script>
+        $(document).ready(function() {
+            window.capacityManager = new CapacityPricingManager({
+                eventId: '@Model.Event.Id',
+                existingTiers: @Html.Raw(Json.Serialize(Model.CapacityConfiguration.PricingTiers)),
+                eventDate: new Date('@Model.Event.EndDate.ToString("yyyy-MM-ddTHH:mm:ss")')
+            });
+        });
+    </script>
+}

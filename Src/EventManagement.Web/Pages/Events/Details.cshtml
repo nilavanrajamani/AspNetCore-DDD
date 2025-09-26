@@ -19,7 +19,15 @@
                 <h1 class="h2 mb-0">@Model.Event.Title</h1>
                 <p class="mb-0 mt-2 opacity-75">
                     <i class="fas fa-calendar me-1"></i>
-                    @Model.Event.Date.ToString("dddd, MMMM dd, yyyy 'at' h:mm tt")
+                    @Model.Event.StartDate.ToString("dddd, MMMM dd, yyyy 'at' h:mm tt")
+                    @if (Model.Event.StartDate.Date != Model.Event.EndDate.Date || Model.Event.StartDate != Model.Event.EndDate)
+                    {
+                        <span> - @Model.Event.EndDate.ToString("h:mm tt")</span>
+                        @if (Model.Event.StartDate.Date != Model.Event.EndDate.Date)
+                        {
+                            <span> (@Model.Event.EndDate.ToString("MMM dd"))</span>
+                        }
+                    }
                 </p>
             </div>
             <div class="col-md-4 text-md-end">
@@ -100,13 +108,19 @@
                                 </div>
                             }
                             
-                            <div class="timeline-item @(Model.Event.Date <= DateTime.Now ? "completed" : "")">
+                            <div class="timeline-item @(Model.Event.StartDate <= DateTime.Now ? "completed" : "")">
                                 <div class="timeline-marker">
                                     <i class="fas fa-calendar-check"></i>
                                 </div>
                                 <div class="timeline-content">
                                     <h6>Event Date</h6>
-                                    <p class="text-muted mb-0">@Model.Event.Date.ToString("MMM dd, yyyy 'at' h:mm tt")</p>
+                                    <p class="text-muted mb-0">
+                                        @Model.Event.StartDate.ToString("MMM dd, yyyy 'at' h:mm tt")
+                                        @if (Model.Event.StartDate != Model.Event.EndDate)
+                                        {
+                                            <span> - @Model.Event.EndDate.ToString("h:mm tt")</span>
+                                        }
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -130,7 +144,11 @@
                                 <i class="fas fa-calendar-alt me-1"></i>Date:
                             </div>
                             <div class="col-7">
-                                @Model.Event.Date.ToString("MMM dd, yyyy")
+                                @Model.Event.StartDate.ToString("MMM dd, yyyy")
+                                @if (Model.Event.StartDate.Date != Model.Event.EndDate.Date)
+                                {
+                                    <span> - @Model.Event.EndDate.ToString("MMM dd, yyyy")</span>
+                                }
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -138,7 +156,11 @@
                                 <i class="fas fa-clock me-1"></i>Time:
                             </div>
                             <div class="col-7">
-                                @Model.Event.Date.ToString("h:mm tt")
+                                @Model.Event.StartDate.ToString("h:mm tt")
+                                @if (Model.Event.StartDate != Model.Event.EndDate)
+                                {
+                                    <span> - @Model.Event.EndDate.ToString("h:mm tt")</span>
+                                }
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -172,6 +194,34 @@
                                 </div>
                             </div>
                         }
+                        @if (Model.Event.TotalCapacity.HasValue)
+                        {
+                            <div class="row mb-3">
+                                <div class="col-5 text-muted">
+                                    <i class="fas fa-users me-1"></i>Capacity:
+                                </div>
+                                <div class="col-7">
+                                    <span class="badge bg-success">@Model.Event.TotalCapacity.Value.ToString("N0")</span>
+                                    @if (Model.Event.PricingTiers.Any())
+                                    {
+                                        <span class="badge bg-info ms-1">@Model.Event.PricingTiers.Count Tiers</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else if (Model.Event.Status == EventStatus.Draft)
+                        {
+                            <div class="row mb-3">
+                                <div class="col-5 text-muted">
+                                    <i class="fas fa-users me-1"></i>Capacity:
+                                </div>
+                                <div class="col-7">
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Not Set
+                                    </span>
+                                </div>
+                            </div>
+                        }
                         <div class="row">
                             <div class="col-5 text-muted">
                                 <i class="fas fa-plus me-1"></i>Created:
@@ -197,6 +247,9 @@
                             <div class="d-grid gap-2">
                                 <a asp-page="/Events/Edit" asp-route-id="@Model.Event.Id" class="btn btn-warning btn-custom">
                                     <i class="fas fa-edit me-2"></i>Edit Event
+                                </a>
+                                <a asp-page="/Events/Capacity" asp-route-id="@Model.Event.Id" class="btn btn-primary btn-custom">
+                                    <i class="fas fa-users me-2"></i>Set Capacity & Pricing
                                 </a>
                                 <button type="button" class="btn btn-success btn-custom" onclick="publishEvent('@Model.Event.Id')">
                                     <i class="fas fa-globe me-2"></i>Publish Event

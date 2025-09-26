@@ -11,7 +11,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
         // Use the connection string from arguments or default LocalDB
-        var connectionString = args.Length > 0 ? args[0] : 
+        var connectionString = args.Length > 0 ? args[0] :
             "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=DDD_Db;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False";
 
         optionsBuilder.UseSqlServer(connectionString);

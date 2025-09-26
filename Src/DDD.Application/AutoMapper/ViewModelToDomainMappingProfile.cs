@@ -1,7 +1,10 @@
+using System.Linq;
+
 using AutoMapper;
 
 using DDD.Application.ViewModels;
 using DDD.Domain.Commands;
+using DDD.Domain.Models;
 
 namespace DDD.Application.AutoMapper;
 
@@ -16,5 +19,26 @@ public class ViewModelToDomainMappingProfile : Profile
 
         CreateMap<EventViewModel, CreateEventCommand>()
             .ConstructUsing(e => new CreateEventCommand(e.Title, e.Description, e.OrganizerId, e.VenueId, e.StartDate, e.EndDate));
+
+        CreateMap<SetEventCapacityViewModel, SetEventCapacityCommand>()
+            .ConstructUsing(c => new SetEventCapacityCommand(
+                c.EventId,
+                c.TotalCapacity,
+                c.PricingTiers.Select(t => new PricingTierDefinition(
+                    t.Name,
+                    t.Price,
+                    t.Currency,
+                    t.Capacity,
+                    t.SaleStartDate,
+                    t.SaleEndDate)).ToList()));
+
+        CreateMap<PricingTierViewModel, PricingTierDefinition>()
+            .ConstructUsing(t => new PricingTierDefinition(
+                t.Name,
+                t.Price,
+                t.Currency,
+                t.Capacity,
+                t.SaleStartDate,
+                t.SaleEndDate));
     }
 }

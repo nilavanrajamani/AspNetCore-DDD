@@ -198,7 +198,7 @@ public class AccountController : ApiController
         var claims = _user.GetClaimsIdentity().ToList();
         var roles = claims.Where(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" || c.Type == "role").Select(c => c.Value).ToList();
         var isAdmin = roles.Contains("Admin");
-        var email = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/soap/envelope/")?.Value ?? 
+        var email = claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/soap/envelope/")?.Value ??
                    claims.FirstOrDefault(c => c.Type == "email")?.Value;
 
         // Enhanced permission checking
@@ -216,9 +216,9 @@ public class AccountController : ApiController
                     var userClaims = await _userManager.GetClaimsAsync(user);
                     hasEventsModifyClaim = userClaims.Any(c => c.Type == "Events_Modify" && c.Value == "Modify");
                     canModifyEventsData = isAdmin && hasEventsModifyClaim;
-                    
-                    permissionSummary = canModifyEventsData 
-                        ? "✅ YES - Has CanModifyEventsData permission" 
+
+                    permissionSummary = canModifyEventsData
+                        ? "✅ YES - Has CanModifyEventsData permission"
                         : $"❌ NO - Missing: {(isAdmin ? "" : "Admin role")}{(isAdmin && !hasEventsModifyClaim ? "" : isAdmin ? "" : ", ")}{(hasEventsModifyClaim ? "" : "Events_Modify claim")}";
                 }
                 else
@@ -280,7 +280,7 @@ public class AccountController : ApiController
             // Add Events_Modify claim
             var eventsClaim = new Claim("Events_Modify", "Modify");
             var result = await _userManager.AddClaimAsync(user, eventsClaim);
-            
+
             if (!result.Succeeded)
             {
                 AddIdentityErrors(result);
@@ -314,7 +314,7 @@ public class AccountController : ApiController
         {
             var roles = await _userManager.GetRolesAsync(user);
             var claims = await _userManager.GetClaimsAsync(user);
-            
+
             userList.Add(new
             {
                 user.Id,

@@ -1,0 +1,114 @@
+@model EventManagement.Web.Models.PricingTierViewModel
+@{
+    var index = ViewData["Index"];
+    var tierIndex = index != null ? (int)index : 0;
+    var fieldPrefix = $"CapacityConfiguration.PricingTiers[{tierIndex}]";
+}
+
+<div class="pricing-tier-form border rounded p-3 mb-3" data-tier-index="@tierIndex">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <h6 class="mb-0">
+            <span class="badge bg-primary me-2">Tier @(tierIndex + 1)</span>
+            <span class="tier-name-display">@(Model.Name ?? "New Pricing Tier")</span>
+        </h6>
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-secondary" title="Collapse/Expand" onclick="toggleTierForm(@tierIndex)">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            <button type="button" class="btn btn-outline-danger" title="Remove Tier" onclick="removePricingTier(@tierIndex)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="tier-form-content">
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Tier Name <span class="text-danger">*</span>
+                </label>
+                <input name="@(fieldPrefix).Name" 
+                       value="@Model.Name"
+                       type="text" 
+                       class="form-control tier-name" 
+                       placeholder="e.g., Early Bird, Regular, VIP"
+                       maxlength="50"
+                       onchange="updateTierNameDisplay(@tierIndex, this.value)">
+                <div class="form-text">
+                    Choose a descriptive name for this pricing tier
+                </div>
+                <span class="text-danger field-validation-valid" data-valmsg-for="@(fieldPrefix).Name" data-valmsg-replace="true"></span>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">
+                    Price <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input name="@(fieldPrefix).Price" 
+                           value="@Model.Price.ToString("F2")"
+                           type="number" 
+                           class="form-control tier-price" 
+                           step="0.01" 
+                           min="0" 
+                           max="10000"
+                           placeholder="0.00">
+                </div>
+                <span class="text-danger field-validation-valid" data-valmsg-for="@(fieldPrefix).Price" data-valmsg-replace="true"></span>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">
+                    Currency
+                </label>
+                <select name="@(fieldPrefix).Currency" value="@(Model.Currency ?? "USD")" class="form-select tier-currency">
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="CAD">CAD ($)</option>
+                </select>
+                <script>
+                    document.querySelector('select[name="@(fieldPrefix).Currency"]').value = '@(Model.Currency ?? "USD")';
+                </script>
+                <span class="text-danger field-validation-valid" data-valmsg-for="@(fieldPrefix).Currency" data-valmsg-replace="true"></span>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                    Tier Capacity <span class="text-danger">*</span>
+                </label>
+                <input name="@(fieldPrefix).Capacity" 
+                       value="@Model.Capacity"
+                       type="number" 
+                       class="form-control tier-capacity" 
+                       min="1" 
+                       placeholder="e.g., 100">
+                <div class="form-text">
+                    Number of tickets in this tier
+                </div>
+                <span class="text-danger field-validation-valid" data-valmsg-for="@(fieldPrefix).Capacity" data-valmsg-replace="true"></span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                    Sale Start Date <span class="text-danger">*</span>
+                </label>
+                <input name="@(fieldPrefix).SaleStartDate" 
+                       value="@Model.SaleStartDate.ToString("yyyy-MM-ddTHH:mm")"
+                       type="datetime-local" 
+                       class="form-control tier-sale-start">
+                <span class="text-danger field-validation-valid" data-valmsg-for="@(fieldPrefix).SaleStartDate" data-valmsg-replace="true"></span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                    Sale End Date <span class="text-danger">*</span>
+                </label>
+                <input name="@(fieldPrefix).SaleEndDate" 
+                       value="@Model.SaleEndDate.ToString("yyyy-MM-ddTHH:mm")"
+                       type="datetime-local" 
+                       class="form-control tier-sale-end">
+                <span class="text-danger field-validation-valid" data-valmsg-for="@(fieldPrefix).SaleEndDate" data-valmsg-replace="true"></span>
+            </div>
+        </div>
+    </div>
+</div>

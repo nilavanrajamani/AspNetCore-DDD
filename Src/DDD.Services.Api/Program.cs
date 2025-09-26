@@ -136,27 +136,27 @@ using (var scope = app.Services.CreateScope())
         var applicationDbContext = services.GetRequiredService<DDD.Infra.Data.Context.ApplicationDbContext>();
         var eventStoreContext = services.GetRequiredService<DDD.Infra.Data.Context.EventStoreSqlContext>();
         var authDbContext = services.GetRequiredService<DDD.Infra.CrossCutting.Identity.Data.AuthDbContext>();
-        
+
         // Create application tables
         applicationDbContext.Database.EnsureCreated();
-        
+
         // Seed venues
         await SeedVenuesAsync(applicationDbContext, logger);
-        
+
         // Create event store tables
         eventStoreContext.Database.EnsureCreated();
-        
+
         // Ensure StoredEvent table exists (workaround for multiple context issue)
         await EnsureStoredEventTableAsync(eventStoreContext, logger);
-        
+
         // Verify Identity tables exist
         logger.LogInformation("Verifying Identity database schema...");
-        
+
         try
         {
             var userCount = await authDbContext.Users.CountAsync();
             logger.LogInformation("Identity tables are available. User count: {Count}", userCount);
-            
+
             // Seed default roles
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
             await SeedRolesAsync(roleManager, logger);
@@ -177,9 +177,9 @@ app.Run();
 static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager, ILogger logger)
 {
     logger.LogInformation("Seeding default roles...");
-    
+
     var roles = new[] { Roles.Admin, Roles.User };
-    
+
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
@@ -204,7 +204,7 @@ static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager, ILogger 
 static async Task SeedVenuesAsync(DDD.Infra.Data.Context.ApplicationDbContext context, ILogger logger)
 {
     logger.LogInformation("Seeding venues...");
-    
+
     if (await context.Venues.AnyAsync())
     {
         logger.LogInformation("Venues already exist, skipping seed");
@@ -222,14 +222,14 @@ static async Task SeedVenuesAsync(DDD.Infra.Data.Context.ApplicationDbContext co
 
     context.Venues.AddRange(venues);
     await context.SaveChangesAsync();
-    
+
     logger.LogInformation("Successfully seeded {Count} venues", venues.Length);
 }
 
 static async Task EnsureStoredEventTableAsync(DDD.Infra.Data.Context.EventStoreSqlContext context, ILogger logger)
 {
     logger.LogInformation("Ensuring StoredEvent table exists...");
-    
+
     try
     {
         // Try to query the StoredEvent table to see if it exists
@@ -239,7 +239,7 @@ static async Task EnsureStoredEventTableAsync(DDD.Infra.Data.Context.EventStoreS
     catch (Exception)
     {
         logger.LogWarning("StoredEvent table does not exist, creating it...");
-        
+
         // Create the StoredEvent table using raw SQL with correct column names from StoredEventMap
         var createTableSql = @"
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='StoredEvent' AND xtype='U')
@@ -254,7 +254,7 @@ static async Task EnsureStoredEventTableAsync(DDD.Infra.Data.Context.EventStoreS
                     CONSTRAINT [PK_StoredEvent] PRIMARY KEY ([Id])
                 );
             END";
-            
+
         await context.Database.ExecuteSqlRawAsync(createTableSql);
         logger.LogInformation("StoredEvent table created successfully");
     }

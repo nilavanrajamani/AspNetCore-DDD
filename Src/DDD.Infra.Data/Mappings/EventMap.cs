@@ -43,6 +43,15 @@ public class EventMap : IEntityTypeConfiguration<Event>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(e => e.TotalCapacity)
+            .IsRequired(false);
+
+        // Navigation property for pricing tiers
+        builder.HasMany(e => e.PricingTiers)
+            .WithOne()
+            .HasForeignKey(p => p.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Add query filter for soft delete
         builder.HasQueryFilter(e => !e.IsDeleted);
     }

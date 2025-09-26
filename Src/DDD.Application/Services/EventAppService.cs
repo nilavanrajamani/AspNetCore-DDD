@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -62,6 +63,23 @@ public class EventAppService : IEventAppService
     {
         // TODO: Implement RemoveEventCommand when needed
         throw new NotImplementedException("Remove event functionality not yet implemented");
+    }
+
+    public void SetCapacityAndPricing(SetEventCapacityViewModel capacityViewModel)
+    {
+        var command = _mapper.Map<SetEventCapacityCommand>(capacityViewModel);
+        _bus.SendCommand(command);
+    }
+
+    public SetEventCapacityViewModel GetCapacityAndPricing(Guid eventId)
+    {
+        var eventEntity = _eventRepository.GetById(eventId);
+        if (eventEntity == null)
+        {
+            return null;
+        }
+
+        return _mapper.Map<SetEventCapacityViewModel>(eventEntity);
     }
 
     public void Dispose()

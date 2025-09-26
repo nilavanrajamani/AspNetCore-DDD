@@ -80,17 +80,30 @@
                         </div>
 
                         <div class="row">
-                            <!-- Event Date and Time -->
+                            <!-- Event Start Date and Time -->
                             <div class="col-md-6 mb-4">
-                                <label asp-for="Event.Date" class="form-label required">
-                                    <i class="fas fa-calendar-alt me-1"></i>Event Date & Time
+                                <label asp-for="Event.StartDate" class="form-label required">
+                                    <i class="fas fa-calendar-alt me-1"></i>Start Date & Time
                                 </label>
-                                <input asp-for="Event.Date" type="datetime-local" class="form-control" 
+                                <input asp-for="Event.StartDate" type="datetime-local" class="form-control" 
                                        min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required>
                                 <div class="form-text">
-                                    Select when your event will take place
+                                    Select when your event will start
                                 </div>
-                                <span asp-validation-for="Event.Date" class="text-danger"></span>
+                                <span asp-validation-for="Event.StartDate" class="text-danger"></span>
+                            </div>
+                            
+                            <!-- Event End Date and Time -->
+                            <div class="col-md-6 mb-4">
+                                <label asp-for="Event.EndDate" class="form-label required">
+                                    <i class="fas fa-calendar-check me-1"></i>End Date & Time
+                                </label>
+                                <input asp-for="Event.EndDate" type="datetime-local" class="form-control" 
+                                       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required>
+                                <div class="form-text">
+                                    Select when your event will end
+                                </div>
+                                <span asp-validation-for="Event.EndDate" class="text-danger"></span>
                             </div>
 
                             <!-- Event Visibility -->

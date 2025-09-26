@@ -1,7 +1,9 @@
 using DDD.Application.Interfaces;
 using DDD.Domain.Core.Bus;
 using DDD.Domain.Core.Notifications;
+
 using MediatR;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
