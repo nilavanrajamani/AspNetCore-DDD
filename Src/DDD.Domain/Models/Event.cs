@@ -179,7 +179,11 @@ public class Event : EntityAudit
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Cancel(string reason)
+    public string CancellationReason { get; private set; }
+
+    public DateTime? CancelledAt { get; private set; }
+
+    public void Cancel(string reason, bool initiateRefunds = true)
     {
         if (Status == EventStatus.Cancelled)
             throw new InvalidOperationException("Event is already cancelled");
@@ -187,8 +191,18 @@ public class Event : EntityAudit
         if (Status == EventStatus.Completed)
             throw new InvalidOperationException("Cannot cancel completed event");
 
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Cancellation reason is required", nameof(reason));
+
+        var previousStatus = Status;
         Status = EventStatus.Cancelled;
+        CancellationReason = reason;
+        CancelledAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
+
+        // Raise domain event for proper notifications and refund processing
+        // This will be handled by EventCancelledEventHandler
+        // The event handler will notify attendees and initiate refunds
     }
 
     private bool HasBookings()

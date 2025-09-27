@@ -164,4 +164,19 @@ public class EventsController : ApiController
         _eventAppService.UnpublishEvent(id, request.Reason);
         return Response();
     }
+
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/cancel")]
+    public IActionResult CancelEvent(Guid id, [FromBody] CancelEventRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(request);
+        }
+
+        _eventAppService.CancelEvent(id, request.Reason, request.InitiateRefunds);
+        return Response();
+    }
 }

@@ -22,6 +22,9 @@ public interface IEventApiService
     
     // Update Event Details methods for US004
     Task<ApiResponse<bool>> UpdateEventDetailsAsync(UpdateEventViewModel model);
+    
+    // Cancel Event method for US005
+    Task<ApiResponse<bool>> CancelEventAsync(Guid eventId, string reason, bool initiateRefunds = true);
 }
 
 public class EventApiService : IEventApiService
@@ -638,6 +641,71 @@ public class EventApiService : IEventApiService
                 Success = false,
                 Data = false,
                 Message = "Error connecting to the API service"
+            };
+        }
+    }
+
+    // Cancel Event implementation for US005
+    public async Task<ApiResponse<bool>> CancelEventAsync(Guid eventId, string reason, bool initiateRefunds = true)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var payload = new { reason = reason, initiateRefunds = initiateRefunds };
+            var json = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PutAsync($"api/v1/events/event-management/{eventId}/cancel", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Event cancelled successfully",
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to cancel event: {response.StatusCode}",
+                Errors = new List<string> { responseContent },
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling event {EventId}", eventId);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
             };
         }
     }

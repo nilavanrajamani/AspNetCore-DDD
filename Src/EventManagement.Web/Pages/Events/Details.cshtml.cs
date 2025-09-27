@@ -109,4 +109,34 @@ public class DetailsModel : PageModel
 
         return RedirectToPage("./Details", new { id });
     }
+
+    public async Task<IActionResult> OnPostCancelAsync(Guid id, string reason, bool initiateRefunds = true)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            TempData["Error"] = "A reason is required to cancel an event.";
+            return RedirectToPage("./Details", new { id });
+        }
+
+        try
+        {
+            var response = await _eventApiService.CancelEventAsync(id, reason, initiateRefunds);
+            
+            if (response.Success)
+            {
+                TempData["Success"] = response.Message;
+            }
+            else
+            {
+                TempData["Error"] = response.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "An error occurred while cancelling the event.";
+            _logger.LogError(ex, "Error cancelling event {EventId}", id);
+        }
+
+        return RedirectToPage("./Details", new { id });
+    }
 }

@@ -28,4 +28,6 @@ public interface IEventAppService : IDisposable
     void PublishEvent(Guid eventId);
 
     void UnpublishEvent(Guid eventId, string reason);
+
+    void CancelEvent(Guid eventId, string reason, bool initiateRefunds = true);
 }

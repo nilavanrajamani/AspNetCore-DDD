@@ -46,6 +46,14 @@ public class EventMap : IEntityTypeConfiguration<Event>
         builder.Property(e => e.TotalCapacity)
             .IsRequired(false);
 
+        builder.Property(e => e.CancellationReason)
+            .HasColumnType("varchar(500)")
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        builder.Property(e => e.CancelledAt)
+            .IsRequired(false);
+
         // Navigation property for pricing tiers
         builder.HasMany(e => e.PricingTiers)
             .WithOne()

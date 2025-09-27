@@ -10,7 +10,8 @@ public class EventEventHandler :
     INotificationHandler<EventCapacitySetEvent>, 
     INotificationHandler<EventPublishedEvent>, 
     INotificationHandler<EventUnpublishedEvent>,
-    INotificationHandler<EventUpdatedEvent>
+    INotificationHandler<EventUpdatedEvent>,
+    INotificationHandler<EventCancelledEvent>
 {
     public Task Handle(EventCreatedEvent message, CancellationToken cancellationToken)
     {
@@ -62,6 +63,31 @@ public class EventEventHandler :
         // - Update search indexes with new event details
         // - Notify external systems about event modifications
         // - Send push notifications for critical changes (date/venue changes)
+
+        return Task.CompletedTask;
+    }
+
+    public Task Handle(EventCancelledEvent message, CancellationToken cancellationToken)
+    {
+        // Handle event cancellation notifications
+        // This is the core implementation for US005: Cancel Events with Proper Notifications
+        // Could:
+        // - Send cancellation notifications to all registered attendees
+        // - Initiate refund processes for paid tickets if InitiateRefunds is true
+        // - Update search indexes to remove cancelled events
+        // - Notify external systems about event cancellation
+        // - Log audit trail with cancellation details
+        // - Send notifications to event organizers and stakeholders
+        // - Update analytics and reporting systems
+        // - Cancel related bookings and reservations
+
+        // For now, this is a placeholder for the actual notification logic
+        // In a real implementation, this would:
+        // 1. Query for all attendees/bookings for the cancelled event
+        // 2. Send personalized cancellation emails/notifications
+        // 3. If InitiateRefunds is true, start refund workflow
+        // 4. Update event visibility in search systems
+        // 5. Log the cancellation for audit purposes
 
         return Task.CompletedTask;
     }

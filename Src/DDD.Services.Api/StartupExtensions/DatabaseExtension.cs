@@ -29,7 +29,9 @@ public static class DatabaseExtension
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions => sqlOptions.MigrationsAssembly("DDD.Infra.Data"));
 
             // options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             if (!env.IsProduction())

@@ -115,6 +115,22 @@ public class EventAppService : IEventAppService
         _bus.SendCommand(unpublishCommand);
     }
 
+    public void CancelEvent(Guid eventId, string reason, bool initiateRefunds = true)
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Reason cannot be null, empty, or whitespace", nameof(reason));
+        }
+
+        var cancelCommand = new CancelEventCommand(eventId, reason, initiateRefunds);
+        _bus.SendCommand(cancelCommand);
+    }
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);

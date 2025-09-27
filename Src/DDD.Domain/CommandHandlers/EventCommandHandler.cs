@@ -18,7 +18,8 @@ public class EventCommandHandler : CommandHandler,
     IRequestHandler<SetEventCapacityCommand, bool>,
     IRequestHandler<PublishEventCommand, bool>,
     IRequestHandler<UnpublishEventCommand, bool>,
-    IRequestHandler<UpdateEventCommand, bool>
+    IRequestHandler<UpdateEventCommand, bool>,
+    IRequestHandler<CancelEventCommand, bool>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IVenueRepository _venueRepository;
@@ -287,6 +288,51 @@ public class EventCommandHandler : CommandHandler,
             return Task.FromResult(true);
         }
         catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(CancelEventCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.Id);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            var previousStatus = eventEntity.Status;
+            eventEntity.Cancel(message.Reason, message.InitiateRefunds);
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                _bus.RaiseEvent(new EventCancelledEvent(
+                    eventEntity.Id,
+                    eventEntity.OrganizerId,
+                    message.Reason,
+                    previousStatus,
+                    message.InitiateRefunds));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+        catch (ArgumentException ex)
         {
             _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
             return Task.FromResult(false);

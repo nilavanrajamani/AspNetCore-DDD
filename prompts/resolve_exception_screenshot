@@ -1,0 +1,15 @@
+You are an expert software engineer working on design and implementation of an Event Management System from the scratch in domain driven design. 
+
+Variable:
+@operation_performed: "Event view"
+@exception_file: "EventRepository.cs"
+@user_story_to_update: "US005_Cancel_Events_Implementation.md"
+@screenshot_attached: "attached screenshot"
+
+What:
+- Getting exception at @exception_file as in @screenshot_attached while performing the operation @operation_performed
+
+To do:
+- Resolve exception.
+- Resolve compilation errors if any (do not work on stylecop issues).
+- Once done update a documentation of the work done for this story in @user_story_to_update in "done" folder.

@@ -1,9 +1,19 @@
 You are an expert software engineer working on design and implementation of an Event Management System from the scratch in domain driven design. 
 
+Variables:
+- @story_to_work_on: "US005: Cancel Events with Proper Notifications"
+- @req_file_to_look_into: "03_Epic_1_Event_Management_Detailed.md"
+
 Context:
 - Look into all the markdowns in "readmes" folder to understand the current architecture of the system.
 
 To do:
-- Work on just the "US004: Update Event Details" as part of "03_Epic_1_Event_Management_Detailed.md". Create/modify files as necessary
+- Work on just the @story_to_work_on as part of @req_file_to_look_into. Create/modify files as necessary
+- For any new database column added or existing column modified, make sure to update its mappings in "DDD.Infra.Data" and create a migration file. Apply migration migration using the below parameters:
+    - --project Src\DDD.Infra.Data\DDD.Infra.Data.csproj 
+    - --startup-project Src\DDD.Services.Api\DDD.Services.Api.csproj 
+    - --context DDD.Infra.Data.Context.ApplicationDbContext
 - Resolve compilation errors (do not work on stylecop issues).
-- Once done create a documentation of the work done for this story in "done" folder by creating a new file. Look into existing files in the folder to understand the documentation of other user stories and maintain the same format.
+- Make sure to register necessary dependencies in NativeInjectorBootStrapper.cs
+- Look into latest created file in "readmes/done" folder to understand the documentation of other user stories and the issues that they faced while working on this story.
+- Once done create a documentation of the work done for this story in "done" folder by creating a new file. Maintain the same format as latest created file in "readmes/done" folder.

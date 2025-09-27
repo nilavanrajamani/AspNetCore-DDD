@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -137,8 +138,35 @@ using (var scope = app.Services.CreateScope())
         var eventStoreContext = services.GetRequiredService<DDD.Infra.Data.Context.EventStoreSqlContext>();
         var authDbContext = services.GetRequiredService<DDD.Infra.CrossCutting.Identity.Data.AuthDbContext>();
 
-        // Create application tables
-        applicationDbContext.Database.EnsureCreated();
+        // Apply database migrations (this will create the database if it doesn't exist)
+        logger.LogInformation("Checking for pending database migrations...");
+        
+        try
+        {
+            var pendingMigrations = applicationDbContext.Database.GetPendingMigrations();
+            var pendingMigrationsList = pendingMigrations.ToList();
+            
+            if (pendingMigrationsList.Any())
+            {
+                logger.LogInformation("Found {Count} pending migrations: {Migrations}",
+                    pendingMigrationsList.Count,
+                    string.Join(", ", pendingMigrationsList));
+                logger.LogInformation("Applying database migrations...");
+                
+                applicationDbContext.Database.Migrate();
+                
+                logger.LogInformation("Database migrations applied successfully");
+            }
+            else
+            {
+                logger.LogInformation("Database is up to date - no pending migrations");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error occurred while applying database migrations: {Message}", ex.Message);
+            throw;
+        }
 
         // Seed venues
         await SeedVenuesAsync(applicationDbContext, logger);

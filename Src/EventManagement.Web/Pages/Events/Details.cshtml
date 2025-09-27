@@ -491,7 +491,41 @@
         }
 
         function cancelEvent(eventId) {
-            showWarning('Cancel Event', 'This feature will be implemented in the next phase.');
+            const reason = prompt('Please provide a reason for cancelling this event:');
+            if (reason && reason.trim()) {
+                const initiateRefunds = confirm('Do you want to initiate refunds for paid tickets? Click OK for Yes, Cancel for No.');
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '?handler=Cancel&id=' + eventId;
+                
+                // Add anti-forgery token
+                const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (token) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token.value;
+                    form.appendChild(tokenInput);
+                }
+                
+                // Add reason input
+                const reasonInput = document.createElement('input');
+                reasonInput.type = 'hidden';
+                reasonInput.name = 'reason';
+                reasonInput.value = reason;
+                form.appendChild(reasonInput);
+                
+                // Add initiateRefunds input
+                const refundsInput = document.createElement('input');
+                refundsInput.type = 'hidden';
+                refundsInput.name = 'initiateRefunds';
+                refundsInput.value = initiateRefunds;
+                form.appendChild(refundsInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
 
         function shareEvent(eventId) {
