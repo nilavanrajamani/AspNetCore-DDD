@@ -11,7 +11,10 @@ public class EventEventHandler :
     INotificationHandler<EventPublishedEvent>, 
     INotificationHandler<EventUnpublishedEvent>,
     INotificationHandler<EventUpdatedEvent>,
-    INotificationHandler<EventCancelledEvent>
+    INotificationHandler<EventCancelledEvent>,
+    INotificationHandler<EventVisibilityChangedEvent>,
+    INotificationHandler<UserInvitedToEventEvent>,
+    INotificationHandler<UserInvitationRemovedEvent>
 {
     public Task Handle(EventCreatedEvent message, CancellationToken cancellationToken)
     {
@@ -88,6 +91,44 @@ public class EventEventHandler :
         // 3. If InitiateRefunds is true, start refund workflow
         // 4. Update event visibility in search systems
         // 5. Log the cancellation for audit purposes
+
+        return Task.CompletedTask;
+    }
+
+    public Task Handle(EventVisibilityChangedEvent message, CancellationToken cancellationToken)
+    {
+        // Handle event visibility change notifications
+        // Could:
+        // - Update search indexes based on new visibility
+        // - Send notifications to relevant users if event becomes public
+        // - Log audit trail for visibility changes
+        // - Notify external systems about visibility changes
+        // - Update analytics data
+
+        return Task.CompletedTask;
+    }
+
+    public Task Handle(UserInvitedToEventEvent message, CancellationToken cancellationToken)
+    {
+        // Handle user invitation notifications
+        // Could:
+        // - Send invitation email to the invited user
+        // - Create notification in user's dashboard
+        // - Log invitation for audit purposes
+        // - Send push notification about the invitation
+        // - Update user's event recommendations
+
+        return Task.CompletedTask;
+    }
+
+    public Task Handle(UserInvitationRemovedEvent message, CancellationToken cancellationToken)
+    {
+        // Handle user invitation removal notifications
+        // Could:
+        // - Send notification to user about invitation removal
+        // - Remove event from user's invited events list
+        // - Log invitation removal for audit purposes
+        // - Update user interface to reflect removal
 
         return Task.CompletedTask;
     }

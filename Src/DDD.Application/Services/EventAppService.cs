@@ -131,6 +131,90 @@ public class EventAppService : IEventAppService
         _bus.SendCommand(cancelCommand);
     }
 
+    public void SetEventVisibility(Guid eventId, string visibility)
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        if (string.IsNullOrWhiteSpace(visibility))
+        {
+            throw new ArgumentException("Visibility cannot be null, empty, or whitespace", nameof(visibility));
+        }
+
+        if (!Enum.TryParse<Domain.Models.EventVisibility>(visibility, true, out var parsedVisibility))
+        {
+            throw new ArgumentException("Invalid visibility value. Must be Private, Public, or InviteOnly", nameof(visibility));
+        }
+
+        var command = new SetEventVisibilityCommand(eventId, parsedVisibility);
+        _bus.SendCommand(command);
+    }
+
+    public void InviteUserToEvent(Guid eventId, Guid userId, string role = "Attendee")
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException("User ID cannot be empty", nameof(userId));
+        }
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            throw new ArgumentException("Role cannot be null, empty, or whitespace", nameof(role));
+        }
+
+        if (!Enum.TryParse<Domain.Models.InvitationRole>(role, true, out var parsedRole))
+        {
+            throw new ArgumentException("Invalid role value. Must be Attendee, Speaker, Sponsor, or VIP", nameof(role));
+        }
+
+        var command = new InviteUserToEventCommand(eventId, userId, parsedRole);
+        _bus.SendCommand(command);
+    }
+
+    public void RemoveUserInvitation(Guid eventId, Guid userId)
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException("User ID cannot be empty", nameof(userId));
+        }
+
+        var command = new RemoveUserInvitationCommand(eventId, userId);
+        _bus.SendCommand(command);
+    }
+
+    public bool CanUserAccessEvent(Guid eventId, Guid userId)
+    {
+        if (eventId == Guid.Empty)
+        {
+            throw new ArgumentException("Event ID cannot be empty", nameof(eventId));
+        }
+
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException("User ID cannot be empty", nameof(userId));
+        }
+
+        var eventEntity = _eventRepository.GetById(eventId);
+        if (eventEntity == null)
+        {
+            return false;
+        }
+
+        return eventEntity.CanUserAccess(userId);
+    }
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);

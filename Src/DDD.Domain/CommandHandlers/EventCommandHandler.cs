@@ -19,7 +19,10 @@ public class EventCommandHandler : CommandHandler,
     IRequestHandler<PublishEventCommand, bool>,
     IRequestHandler<UnpublishEventCommand, bool>,
     IRequestHandler<UpdateEventCommand, bool>,
-    IRequestHandler<CancelEventCommand, bool>
+    IRequestHandler<CancelEventCommand, bool>,
+    IRequestHandler<SetEventVisibilityCommand, bool>,
+    IRequestHandler<InviteUserToEventCommand, bool>,
+    IRequestHandler<RemoveUserInvitationCommand, bool>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IVenueRepository _venueRepository;
@@ -333,6 +336,120 @@ public class EventCommandHandler : CommandHandler,
             return Task.FromResult(false);
         }
         catch (ArgumentException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(SetEventVisibilityCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.EventId);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            var previousVisibility = eventEntity.Visibility;
+            eventEntity.SetVisibility(message.Visibility);
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                _bus.RaiseEvent(new EventVisibilityChangedEvent(
+                    eventEntity.Id,
+                    eventEntity.OrganizerId,
+                    previousVisibility.ToString(),
+                    message.Visibility.ToString()));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(InviteUserToEventCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.EventId);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            eventEntity.InviteUser(message.UserId, message.Role);
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                _bus.RaiseEvent(new UserInvitedToEventEvent(
+                    eventEntity.Id,
+                    eventEntity.OrganizerId,
+                    message.UserId,
+                    message.Role));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(RemoveUserInvitationCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.EventId);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        try
+        {
+            eventEntity.RemoveInvitation(message.UserId);
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                _bus.RaiseEvent(new UserInvitationRemovedEvent(
+                    eventEntity.Id,
+                    eventEntity.OrganizerId,
+                    message.UserId));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
         {
             _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
             return Task.FromResult(false);

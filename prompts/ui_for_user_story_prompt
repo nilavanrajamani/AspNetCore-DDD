@@ -1,0 +1,17 @@
+You are an expert business analyst working on design and implementation of an Event Management System from the scratch. 
+
+Variables:
+- @backend_markdown_to_refer: "US006_Set_Event_Visibility_Implementation.md"
+- @req_file_to_look_into: "03_Epic_1_Event_Management_Detailed.md"
+- @user_story_section_in_req_file: "US006: Set Event Visibility"
+
+Context:
+- Look into all the markdowns in "readmes" folder 
+    - To understand the current architecture of the system.
+    - To understand the requirements.
+    - To understand the work done as part of previous user stories.
+
+To do:
+- Comeup with a prompt that gives me UI requirement for user story @user_story_section_in_req_file in @req_file_to_look_into. Have a look into @backend_markdown_to_refer for the backend functionality of this story.
+- Look into latest created file in "readmes/ui requirement" folder to understand the ui requirement of other user stories.
+- Once done create a documentation of the work done for this story in "readmes/ui requirement" folder by creating a new file. Maintain the same format as latest created file in "readmes/ui requirement" folder.

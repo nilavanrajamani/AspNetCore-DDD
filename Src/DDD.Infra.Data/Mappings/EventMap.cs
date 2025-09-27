@@ -60,6 +60,12 @@ public class EventMap : IEntityTypeConfiguration<Event>
             .HasForeignKey(p => p.EventId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Navigation property for invited users
+        builder.HasMany(e => e.InvitedUsers)
+            .WithOne()
+            .HasForeignKey(i => i.EventId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // Add query filter for soft delete
         builder.HasQueryFilter(e => !e.IsDeleted);
     }

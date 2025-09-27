@@ -30,4 +30,12 @@ public interface IEventAppService : IDisposable
     void UnpublishEvent(Guid eventId, string reason);
 
     void CancelEvent(Guid eventId, string reason, bool initiateRefunds = true);
+
+    void SetEventVisibility(Guid eventId, string visibility);
+
+    void InviteUserToEvent(Guid eventId, Guid userId, string role = "Attendee");
+
+    void RemoveUserInvitation(Guid eventId, Guid userId);
+
+    bool CanUserAccessEvent(Guid eventId, Guid userId);
 }

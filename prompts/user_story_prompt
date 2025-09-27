@@ -1,11 +1,14 @@
 You are an expert software engineer working on design and implementation of an Event Management System from the scratch in domain driven design. 
 
 Variables:
-- @story_to_work_on: "US005: Cancel Events with Proper Notifications"
+- @story_to_work_on: "US006: Set Event Visibility"
 - @req_file_to_look_into: "03_Epic_1_Event_Management_Detailed.md"
 
 Context:
-- Look into all the markdowns in "readmes" folder to understand the current architecture of the system.
+- Look into all the markdowns in "readmes" folder 
+    - To understand the current architecture of the system.
+    - To understand the requirements.
+    - To understand the work done as part of previous user stories.
 
 To do:
 - Work on just the @story_to_work_on as part of @req_file_to_look_into. Create/modify files as necessary

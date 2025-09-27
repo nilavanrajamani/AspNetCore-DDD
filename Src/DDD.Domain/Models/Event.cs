@@ -10,6 +10,7 @@ namespace DDD.Domain.Models;
 public class Event : EntityAudit
 {
     private readonly List<PricingTier> _pricingTiers = new();
+    private readonly List<InvitedUser> _invitedUsers = new();
 
     public Event(Guid id, string title, string description, Guid organizerId, Guid venueId, DateTime startDate, DateTime endDate)
     {
@@ -49,6 +50,8 @@ public class Event : EntityAudit
     public int? TotalCapacity { get; private set; }
 
     public IReadOnlyList<PricingTier> PricingTiers => _pricingTiers.AsReadOnly();
+
+    public IReadOnlyList<InvitedUser> InvitedUsers => _invitedUsers.AsReadOnly();
 
     public void UpdateDetails(string title, string description, Guid venueId, DateTime startDate, DateTime endDate, bool forceUpdate = false)
     {
@@ -240,6 +243,59 @@ public class Event : EntityAudit
 
         if (errors.Any())
             throw new InvalidOperationException($"Cannot publish incomplete event: {string.Join(", ", errors)}");
+    }
+
+    public void SetVisibility(EventVisibility visibility)
+    {
+        if (Visibility != visibility)
+        {
+            var previousVisibility = Visibility;
+            Visibility = visibility;
+            UpdatedAt = DateTime.UtcNow;
+
+            // Raise domain event for visibility change
+            // This will be handled by EventVisibilityChangedEventHandler
+        }
+    }
+
+    public void InviteUser(Guid userId, InvitationRole role = InvitationRole.Attendee)
+    {
+        if (Visibility != EventVisibility.InviteOnly)
+            throw new InvalidOperationException("Can only invite users to invite-only events");
+
+        if (_invitedUsers.Any(u => u.UserId == userId))
+            throw new InvalidOperationException("User is already invited");
+
+        var invitation = new InvitedUser(System.Guid.NewGuid(), Id, userId, role);
+        _invitedUsers.Add(invitation);
+        UpdatedAt = DateTime.UtcNow;
+
+        // Raise domain event for user invitation
+        // This will be handled by UserInvitedToEventEventHandler
+    }
+
+    public void RemoveInvitation(Guid userId)
+    {
+        var invitation = _invitedUsers.FirstOrDefault(u => u.UserId == userId);
+        if (invitation != null)
+        {
+            _invitedUsers.Remove(invitation);
+            UpdatedAt = DateTime.UtcNow;
+
+            // Raise domain event for invitation removal
+            // This will be handled by UserInvitationRemovedEventHandler
+        }
+    }
+
+    public bool CanUserAccess(Guid userId)
+    {
+        return Visibility switch
+        {
+            EventVisibility.Public => true,
+            EventVisibility.Private => OrganizerId == userId,
+            EventVisibility.InviteOnly => OrganizerId == userId || _invitedUsers.Any(u => u.UserId == userId),
+            _ => false,
+        };
     }
 }
 

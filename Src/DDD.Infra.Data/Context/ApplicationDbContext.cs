@@ -28,6 +28,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<PricingTier> PricingTiers { get; set; }
 
+    public DbSet<InvitedUser> InvitedUsers { get; set; }
+
     // public override int SaveChanges()
     // {
     //     OnBeforeSaving();
@@ -58,6 +60,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EventMap());
         modelBuilder.ApplyConfiguration(new VenueMap());
         modelBuilder.ApplyConfiguration(new PricingTierMap());
+        modelBuilder.ApplyConfiguration(new InvitedUserMap());
 
         base.OnModelCreating(modelBuilder);
     }

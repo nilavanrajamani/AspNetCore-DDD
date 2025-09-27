@@ -179,4 +179,52 @@ public class EventsController : ApiController
         _eventAppService.CancelEvent(id, request.Reason, request.InitiateRefunds);
         return Response();
     }
+
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/visibility")]
+    public IActionResult SetEventVisibility(Guid id, [FromBody] SetEventVisibilityRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(request);
+        }
+
+        _eventAppService.SetEventVisibility(id, request.Visibility);
+        return Response();
+    }
+
+    [HttpPost]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/invitations")]
+    public IActionResult InviteUserToEvent(Guid id, [FromBody] InviteUserToEventRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(request);
+        }
+
+        _eventAppService.InviteUserToEvent(id, request.UserId, request.Role);
+        return Response();
+    }
+
+    [HttpDelete]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/invitations/{userId:guid}")]
+    public IActionResult RemoveUserInvitation(Guid id, Guid userId)
+    {
+        _eventAppService.RemoveUserInvitation(id, userId);
+        return Response();
+    }
+
+    [HttpGet]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/access/{userId:guid}")]
+    public IActionResult CheckUserAccess(Guid id, Guid userId)
+    {
+        var hasAccess = _eventAppService.CanUserAccessEvent(id, userId);
+        return Response(new { HasAccess = hasAccess });
+    }
 }
