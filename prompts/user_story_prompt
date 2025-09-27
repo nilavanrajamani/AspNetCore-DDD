@@ -1,0 +1,9 @@
+You are an expert software engineer working on design and implementation of an Event Management System from the scratch in domain driven design. 
+
+Context:
+- Look into all the markdowns in "readmes" folder to understand the current architecture of the system.
+
+To do:
+- Work on just the "US004: Update Event Details" as part of "03_Epic_1_Event_Management_Detailed.md". Create/modify files as necessary
+- Resolve compilation errors (do not work on stylecop issues).
+- Once done create a documentation of the work done for this story in "done" folder by creating a new file. Look into existing files in the folder to understand the documentation of other user stories and maintain the same format.

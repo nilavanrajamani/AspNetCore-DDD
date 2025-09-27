@@ -17,6 +17,8 @@ public interface IEventAppService : IDisposable
 
     void Update(EventViewModel eventViewModel);
 
+    void UpdateEventDetails(UpdateEventViewModel updateEventViewModel);
+
     void Remove(Guid id);
 
     void SetCapacityAndPricing(SetEventCapacityViewModel capacityViewModel);

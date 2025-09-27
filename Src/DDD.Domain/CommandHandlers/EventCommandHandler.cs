@@ -17,7 +17,8 @@ public class EventCommandHandler : CommandHandler,
     IRequestHandler<CreateEventCommand, bool>,
     IRequestHandler<SetEventCapacityCommand, bool>,
     IRequestHandler<PublishEventCommand, bool>,
-    IRequestHandler<UnpublishEventCommand, bool>
+    IRequestHandler<UnpublishEventCommand, bool>,
+    IRequestHandler<UpdateEventCommand, bool>
 {
     private readonly IEventRepository _eventRepository;
     private readonly IVenueRepository _venueRepository;
@@ -199,6 +200,88 @@ public class EventCommandHandler : CommandHandler,
                     eventEntity.Id,
                     eventEntity.OrganizerId,
                     message.Reason));
+            }
+
+            return Task.FromResult(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, ex.Message));
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> Handle(UpdateEventCommand message, CancellationToken cancellationToken)
+    {
+        if (!message.IsValid())
+        {
+            NotifyValidationErrors(message);
+            return Task.FromResult(false);
+        }
+
+        var eventEntity = _eventRepository.GetById(message.Id);
+        if (eventEntity == null)
+        {
+            _bus.RaiseEvent(new DomainNotification(message.MessageType, "The event does not exist."));
+            return Task.FromResult(false);
+        }
+
+        // Check if venue exists if it's being changed
+        if (eventEntity.VenueId != message.VenueId)
+        {
+            var venue = _venueRepository.GetById(message.VenueId);
+            if (venue == null)
+            {
+                _bus.RaiseEvent(new DomainNotification(message.MessageType, "The venue does not exist."));
+                return Task.FromResult(false);
+            }
+        }
+
+        try
+        {
+            var oldTitle = eventEntity.Title;
+            var oldDescription = eventEntity.Description;
+            var oldVenueId = eventEntity.VenueId;
+            var oldStartDate = eventEntity.StartDate;
+            var oldEndDate = eventEntity.EndDate;
+
+            eventEntity.UpdateDetails(
+                message.Title,
+                message.Description,
+                message.VenueId,
+                message.StartDate,
+                message.EndDate,
+                message.ForceUpdate);
+
+            _eventRepository.Update(eventEntity);
+
+            if (Commit())
+            {
+                // Create change list for the domain event
+                var changes = new List<EventChange>();
+
+                if (!string.Equals(oldTitle, message.Title, StringComparison.OrdinalIgnoreCase))
+                    changes.Add(new EventChange("Title", oldTitle, message.Title));
+
+                if (!string.Equals(oldDescription, message.Description, StringComparison.OrdinalIgnoreCase))
+                    changes.Add(new EventChange("Description", oldDescription, message.Description));
+
+                if (oldVenueId != message.VenueId)
+                    changes.Add(new EventChange("VenueId", oldVenueId.ToString(), message.VenueId.ToString()));
+
+                if (oldStartDate != message.StartDate)
+                    changes.Add(new EventChange("StartDate", oldStartDate.ToString("yyyy-MM-dd HH:mm:ss"), message.StartDate.ToString("yyyy-MM-dd HH:mm:ss")));
+
+                if (oldEndDate != message.EndDate)
+                    changes.Add(new EventChange("EndDate", oldEndDate.ToString("yyyy-MM-dd HH:mm:ss"), message.EndDate.ToString("yyyy-MM-dd HH:mm:ss")));
+
+                if (changes.Count > 0 && eventEntity.Status == EventStatus.Published)
+                {
+                    _bus.RaiseEvent(new EventUpdatedEvent(
+                        eventEntity.Id,
+                        eventEntity.OrganizerId,
+                        changes));
+                }
             }
 
             return Task.FromResult(true);

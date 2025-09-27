@@ -40,5 +40,15 @@ public class ViewModelToDomainMappingProfile : Profile
                 t.Capacity,
                 t.SaleStartDate,
                 t.SaleEndDate));
+
+        CreateMap<UpdateEventViewModel, UpdateEventCommand>()
+            .ConstructUsing(u => new UpdateEventCommand(
+                u.Id,
+                u.Title,
+                u.Description,
+                u.VenueId,
+                u.StartDate,
+                u.EndDate,
+                u.ForceUpdate));
     }
 }

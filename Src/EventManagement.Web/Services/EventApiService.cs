@@ -19,6 +19,9 @@ public interface IEventApiService
     // Publish/Unpublish methods for US003
     Task<ApiResponse<bool>> PublishEventAsync(Guid eventId);
     Task<ApiResponse<bool>> UnpublishEventAsync(Guid eventId, string reason);
+    
+    // Update Event Details methods for US004
+    Task<ApiResponse<bool>> UpdateEventDetailsAsync(UpdateEventViewModel model);
 }
 
 public class EventApiService : IEventApiService
@@ -560,6 +563,81 @@ public class EventApiService : IEventApiService
                 Success = false,
                 Data = false,
                 Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    // Update Event Details implementation for US004
+    public async Task<ApiResponse<bool>> UpdateEventDetailsAsync(UpdateEventViewModel model)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var payload = new
+            {
+                id = model.Id,
+                title = model.Title,
+                description = model.Description,
+                venueId = model.VenueId,
+                startDate = model.StartDate,
+                endDate = model.EndDate,
+                forceUpdate = model.ForceUpdate
+            };
+
+            var json = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PutAsync($"api/v1/events/event-management/{model.Id}/details", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Event details updated successfully"
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList()
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to update event details: {response.StatusCode}",
+                Errors = new List<string> { responseContent }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating event details for event {EventId}", model.Id);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service"
             };
         }
     }

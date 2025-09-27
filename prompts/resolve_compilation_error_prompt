@@ -1,0 +1,8 @@
+You are an expert software engineer working on design and implementation of an Event Management System from the scratch in domain driven design. 
+
+Context:
+- Look into all the markdown "US004_Update_Event_Details_Implementation.md" in "readmes/done" folder to understand the current user story you are working on
+
+To do:
+- Resolve compilation errors (do not work on stylecop issues).
+- Once done update a documentation of the work done for this story in "US004_Update_Event_Details_Implementation.md" in "done" folder.

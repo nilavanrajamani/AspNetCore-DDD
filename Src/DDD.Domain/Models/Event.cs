@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using DDD.Domain.Core.Models;
+using DDD.Domain.Events;
 
 namespace DDD.Domain.Models;
 
@@ -49,13 +50,55 @@ public class Event : EntityAudit
 
     public IReadOnlyList<PricingTier> PricingTiers => _pricingTiers.AsReadOnly();
 
-    public void UpdateDetails(string title, string description, DateTime startDate, DateTime endDate)
+    public void UpdateDetails(string title, string description, Guid venueId, DateTime startDate, DateTime endDate, bool forceUpdate = false)
     {
-        Title = title;
-        Description = description;
-        StartDate = startDate;
-        EndDate = endDate;
-        UpdatedAt = DateTime.UtcNow;
+        var changes = new List<EventChange>();
+
+        // Track changes
+        if (!string.Equals(Title, title, StringComparison.OrdinalIgnoreCase))
+        {
+            changes.Add(new EventChange("Title", Title, title));
+            Title = title;
+        }
+
+        if (!string.Equals(Description, description, StringComparison.OrdinalIgnoreCase))
+        {
+            changes.Add(new EventChange("Description", Description, description));
+            Description = description;
+        }
+
+        if (VenueId != venueId)
+        {
+            changes.Add(new EventChange("VenueId", VenueId.ToString(), venueId.ToString()));
+            VenueId = venueId;
+        }
+
+        // Critical changes need validation
+        if (StartDate != startDate || EndDate != endDate)
+        {
+            if (Status == EventStatus.Published && HasBookings() && !forceUpdate)
+            {
+                throw new InvalidOperationException(
+                    "Cannot change event schedule with existing bookings without force confirmation");
+            }
+
+            if (StartDate != startDate)
+            {
+                changes.Add(new EventChange("StartDate", StartDate.ToString("yyyy-MM-dd HH:mm:ss"), startDate.ToString("yyyy-MM-dd HH:mm:ss")));
+                StartDate = startDate;
+            }
+
+            if (EndDate != endDate)
+            {
+                changes.Add(new EventChange("EndDate", EndDate.ToString("yyyy-MM-dd HH:mm:ss"), endDate.ToString("yyyy-MM-dd HH:mm:ss")));
+                EndDate = endDate;
+            }
+        }
+
+        if (changes.Count > 0)
+        {
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     public void SetCapacityAndPricing(int totalCapacity, IEnumerable<PricingTierDefinition> pricingTiers)
@@ -146,6 +189,14 @@ public class Event : EntityAudit
 
         Status = EventStatus.Cancelled;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    private bool HasBookings()
+    {
+        // Check if any pricing tier has reserved capacity
+        // This would typically be checked via a domain service or repository
+        // For now, assume we have bookings if any tier has less available capacity than total capacity
+        return _pricingTiers.Any(t => t.AvailableCapacity < t.Capacity);
     }
 
     private void ValidateEventCompleteness()

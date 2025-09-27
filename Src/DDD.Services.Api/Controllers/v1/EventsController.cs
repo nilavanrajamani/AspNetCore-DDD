@@ -77,6 +77,23 @@ public class EventsController : ApiController
         return Response(eventViewModel);
     }
 
+    [HttpPut]
+    [Authorize(Policy = "CanModifyEventsData")]
+    [Route("event-management/{id:guid}/details")]
+    public IActionResult UpdateEventDetails(Guid id, [FromBody] UpdateEventViewModel updateEventViewModel)
+    {
+        if (!ModelState.IsValid)
+        {
+            NotifyModelStateErrors();
+            return Response(updateEventViewModel);
+        }
+
+        updateEventViewModel.Id = id;
+        _eventAppService.UpdateEventDetails(updateEventViewModel);
+
+        return Response();
+    }
+
     [HttpDelete]
     [Authorize(Policy = "CanModifyEventsData")]
     [Route("event-management/{id:guid}")]

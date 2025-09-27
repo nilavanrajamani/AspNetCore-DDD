@@ -16,5 +16,6 @@ public class DomainToViewModelMappingProfile : Profile
         CreateMap<Event, SetEventCapacityViewModel>()
             .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.TotalCapacity, opt => opt.MapFrom(src => src.TotalCapacity ?? 0));
+        CreateMap<Event, UpdateEventViewModel>();
     }
 }

@@ -67,6 +67,24 @@ public class VenueViewModel
     public int Capacity { get; set; }
 }
 
+public class UpdateEventViewModel
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public Guid VenueId { get; set; }
+    public bool ForceUpdate { get; set; }
+    
+    // Helper property for backward compatibility
+    public DateTime Date 
+    { 
+        get => StartDate; 
+        set => StartDate = value; 
+    }
+}
+
 public class EventListViewModel
 {
     public List<EventViewModel> Events { get; set; } = new();

@@ -5,7 +5,12 @@ using MediatR;
 
 namespace DDD.Domain.EventHandlers;
 
-public class EventEventHandler : INotificationHandler<EventCreatedEvent>, INotificationHandler<EventCapacitySetEvent>, INotificationHandler<EventPublishedEvent>, INotificationHandler<EventUnpublishedEvent>
+public class EventEventHandler : 
+    INotificationHandler<EventCreatedEvent>, 
+    INotificationHandler<EventCapacitySetEvent>, 
+    INotificationHandler<EventPublishedEvent>, 
+    INotificationHandler<EventUnpublishedEvent>,
+    INotificationHandler<EventUpdatedEvent>
 {
     public Task Handle(EventCreatedEvent message, CancellationToken cancellationToken)
     {
@@ -44,6 +49,19 @@ public class EventEventHandler : INotificationHandler<EventCreatedEvent>, INotif
         // - Remove from search indexes
         // - Log audit trail
         // - Notify support team about reason for unpublishing
+
+        return Task.CompletedTask;
+    }
+
+    public Task Handle(EventUpdatedEvent message, CancellationToken cancellationToken)
+    {
+        // Handle event update notifications
+        // Could:
+        // - Send email notifications to attendees about significant changes
+        // - Log audit trail with detailed change information
+        // - Update search indexes with new event details
+        // - Notify external systems about event modifications
+        // - Send push notifications for critical changes (date/venue changes)
 
         return Task.CompletedTask;
     }

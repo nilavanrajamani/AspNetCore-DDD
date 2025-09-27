@@ -59,6 +59,7 @@ public class NativeInjectorBootStrapper
         services.AddScoped<INotificationHandler<EventCapacitySetEvent>, EventEventHandler>();
         services.AddScoped<INotificationHandler<EventPublishedEvent>, EventEventHandler>();
         services.AddScoped<INotificationHandler<EventUnpublishedEvent>, EventEventHandler>();
+        services.AddScoped<INotificationHandler<EventUpdatedEvent>, EventEventHandler>();
 
         // Domain - Commands
         services.AddScoped<IRequestHandler<RegisterNewCustomerCommand, bool>, CustomerCommandHandler>();
@@ -68,6 +69,7 @@ public class NativeInjectorBootStrapper
         services.AddScoped<IRequestHandler<SetEventCapacityCommand, bool>, EventCommandHandler>();
         services.AddScoped<IRequestHandler<PublishEventCommand, bool>, EventCommandHandler>();
         services.AddScoped<IRequestHandler<UnpublishEventCommand, bool>, EventCommandHandler>();
+        services.AddScoped<IRequestHandler<UpdateEventCommand, bool>, EventCommandHandler>();
 
         // Domain - Providers, 3rd parties
         services.AddScoped<IHttpProvider, HttpProvider>();

@@ -59,6 +59,12 @@ public class EventAppService : IEventAppService
         throw new NotImplementedException("Update event functionality not yet implemented");
     }
 
+    public void UpdateEventDetails(UpdateEventViewModel updateEventViewModel)
+    {
+        var updateCommand = _mapper.Map<UpdateEventCommand>(updateEventViewModel);
+        _bus.SendCommand(updateCommand);
+    }
+
     public void Remove(Guid id)
     {
         // TODO: Implement RemoveEventCommand when needed
