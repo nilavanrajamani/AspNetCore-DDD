@@ -1,0 +1,17 @@
+You are an expert business and technical analyst working on design and implementation of an Event Management System from the scratch. 
+
+Variables:
+- @previous_epic_to_refer: "03_Epic_1_Event_Management_Detailed.md"
+- @high_level_epic_requirement: "02_Event_Management_Implementation_Plan.md"
+- @epic_to_draft: "Booking Context"
+
+Context:
+- Look into all the markdowns in "readmes" folder 
+    - To understand the current architecture of the system.
+    - To understand the requirements.
+    - To understand the work done as part of previous user stories.
+
+To do:
+- Draft detailed user story requirements for @epic_to_draft as part of @high_level_epic_requirement file.
+- Document them in "readmes/backend requirement" folder by creating a new file.
+- Refer @previous_epic_to_refer for previous user story draft on one of the other context that is already completed.
