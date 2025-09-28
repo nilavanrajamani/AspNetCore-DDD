@@ -1,0 +1,20 @@
+You are an expert software engineer working on design and implementation of an Event Management System from the scratch in domain driven design. 
+
+Variables:
+- @requirement_to_work_on: "make use of filter my events only in UI"
+- @part_of_requirement: "US001_Create_New_Event_Implementation.md"
+- @specific_ui_file_to_look_into - "list.cshtml in EventManagement.Web"
+- @optional_message - "The endpoint is already added in service layer"
+
+Context:
+- Look into all the markdowns in "readmes" folder 
+    - To understand the current architecture of the system.
+    - To understand the requirements.
+    - To understand the work done as part of previous user stories.
+
+To do:
+- Work on just the @requirement_to_work_on as part of event management system in current workspace (if @specific_ui_file_to_look_into has some value specifically look into this to get started). Create/modify files as necessary
+- if @optional_message has any value, consider this as well.
+- This requirement "is part"/"should have been" of user story file @part_of_requirement.
+- Once done, resolve compilation errors (do not work on stylecop issues).
+- Once done, update the documentation of the work done for this story @part_of_requirement

@@ -270,6 +270,9 @@
                                 <a asp-page="/Events/Capacity" asp-route-id="@Model.Event.Id" class="btn btn-primary btn-custom">
                                     <i class="fas fa-users me-2"></i>Set Capacity & Pricing
                                 </a>
+                                <a asp-page="/Events/Visibility" asp-route-id="@Model.Event.Id" class="btn btn-info btn-custom">
+                                    <i class="fas fa-eye me-2"></i>Visibility Settings
+                                </a>
                                 <button type="button" class="btn btn-success btn-custom" onclick="publishEvent('@Model.Event.Id')">
                                     <i class="fas fa-globe me-2"></i>Publish Event
                                 </button>
@@ -281,7 +284,10 @@
                         else if (Model.Event.Status == EventStatus.Published)
                         {
                             <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-info btn-custom" onclick="shareEvent('@Model.Event.Id')">
+                                <a asp-page="/Events/Visibility" asp-route-id="@Model.Event.Id" class="btn btn-info btn-custom">
+                                    <i class="fas fa-eye me-2"></i>Visibility Settings
+                                </a>
+                                <button type="button" class="btn btn-outline-primary btn-custom" onclick="shareEvent('@Model.Event.Id')">
                                     <i class="fas fa-share me-2"></i>Share Event
                                 </button>
                                 <button type="button" class="btn btn-outline-warning btn-custom" onclick="unpublishEvent('@Model.Event.Id')">

@@ -149,6 +149,9 @@
                                 <a href="/Events/@Model.Event.Id" class="btn btn-outline-secondary">
                                     <i class="fas fa-arrow-left me-2"></i>Cancel
                                 </a>
+                                <a asp-page="/Events/Visibility" asp-route-id="@Model.Event.Id" class="btn btn-outline-info">
+                                    <i class="fas fa-eye me-2"></i>Visibility Settings
+                                </a>
                             </div>
                             <div>
                                 <button type="submit" class="btn btn-primary" id="updateBtn">

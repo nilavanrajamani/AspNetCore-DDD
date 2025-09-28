@@ -38,4 +38,28 @@ public interface IEventAppService : IDisposable
     void RemoveUserInvitation(Guid eventId, Guid userId);
 
     bool CanUserAccessEvent(Guid eventId, Guid userId);
+    
+    /// <summary>
+    /// Gets "my events only" filtered by organizer ID using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <returns>A collection of events organized by the specified user.</returns>
+    IEnumerable<EventViewModel> GetMyEventsOnly(Guid organizerId);
+    
+    /// <summary>
+    /// Gets "my events only" with status filtering using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <param name="status">The event status to filter by.</param>
+    /// <returns>A collection of events organized by the specified user with the given status.</returns>
+    IEnumerable<EventViewModel> GetMyEventsOnly(Guid organizerId, string status);
+    
+    /// <summary>
+    /// Gets "my events only" with pagination using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <param name="skip">The number of events to skip for pagination.</param>
+    /// <param name="take">The number of events to take for pagination.</param>
+    /// <returns>A collection of events organized by the specified user with pagination applied.</returns>
+    IEnumerable<EventViewModel> GetMyEventsOnly(Guid organizerId, int skip, int take);
 }

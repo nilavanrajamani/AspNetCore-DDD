@@ -18,5 +18,6 @@ To do:
     - --context DDD.Infra.Data.Context.ApplicationDbContext
 - Resolve compilation errors (do not work on stylecop issues).
 - Make sure to register necessary dependencies in NativeInjectorBootStrapper.cs
+- If any endpoints are added in "DDD.Services.Api" make sure the correct corresponding endpoint is called through "EventManagement.Web". Often there is a mismatch.
 - Look into latest created file in "readmes/done" folder to understand the documentation of other user stories and the issues that they faced while working on this story.
 - Once done create a documentation of the work done for this story in "done" folder by creating a new file. Maintain the same format as latest created file in "readmes/done" folder.

@@ -25,6 +25,17 @@ public interface IEventApiService
     
     // Cancel Event method for US005
     Task<ApiResponse<bool>> CancelEventAsync(Guid eventId, string reason, bool initiateRefunds = true);
+    
+    // Event Visibility methods for US006
+    Task<ApiResponse<bool>> SetEventVisibilityAsync(Guid eventId, string visibility);
+    Task<ApiResponse<bool>> InviteUserToEventAsync(Guid eventId, Guid userId, string role);
+    Task<ApiResponse<bool>> RemoveUserInvitationAsync(Guid eventId, Guid userId);
+    Task<ApiResponse<bool>> CheckUserAccessAsync(Guid eventId, Guid userId);
+    
+    // My Events Only filtering methods
+    Task<ApiResponse<List<EventViewModel>>> GetMyEventsOnlyAsync(Guid organizerId);
+    Task<ApiResponse<List<EventViewModel>>> GetMyEventsOnlyAsync(Guid organizerId, string status);
+    Task<ApiResponse<List<EventViewModel>>> GetMyEventsOnlyAsync(Guid organizerId, int skip, int take);
 }
 
 public class EventApiService : IEventApiService
@@ -181,6 +192,19 @@ public class EventApiService : IEventApiService
         try
         {
             await SetAuthenticationHeadersAsync();
+            
+            // Get the current user's ID for the organizer field
+            var currentUserId = _currentUserService.UserId;
+            if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var organizerId))
+            {
+                return new ApiResponse<EventViewModel>
+                {
+                    Success = false,
+                    Message = "Unable to identify current user. Please ensure you are logged in.",
+                    Errors = new List<string> { "Current user ID not found or invalid" }
+                };
+            }
+            
             var json = JsonConvert.SerializeObject(new
             {
                 title = model.Title,
@@ -189,7 +213,7 @@ public class EventApiService : IEventApiService
                 endDate = model.EndDate.Year > 1900 ? model.EndDate : model.StartDate.AddHours(2), // Use EndDate if provided, otherwise default 2-hour duration
                 status = "Draft", // The API expects string values
                 visibility = model.Visibility.ToString(),
-                organizerId = Guid.NewGuid(), // TODO: Get from authenticated user
+                organizerId = organizerId, // Use the current authenticated user's ID
                 venueId = model.VenueId ?? Guid.NewGuid(),
             });
 
@@ -706,6 +730,405 @@ public class EventApiService : IEventApiService
                 Success = false,
                 Data = false,
                 Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    // Event Visibility implementation for US006
+    public async Task<ApiResponse<bool>> SetEventVisibilityAsync(Guid eventId, string visibility)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var payload = new { visibility = visibility };
+            var json = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PutAsync($"api/v1/Events/event-management/{eventId}/visibility", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Event visibility updated successfully",
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to set event visibility: {response.StatusCode}",
+                Errors = new List<string> { responseContent },
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting event visibility for event {EventId} to {Visibility}", eventId, visibility);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    public async Task<ApiResponse<bool>> InviteUserToEventAsync(Guid eventId, Guid userId, string role)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var payload = new { userId = userId, role = role };
+            var json = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await _httpClient.PostAsync($"api/v1/Events/event-management/{eventId}/invitations", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "User invited to event successfully",
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to invite user to event: {response.StatusCode}",
+                Errors = new List<string> { responseContent },
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error inviting user {UserId} to event {EventId} with role {Role}", userId, eventId, role);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    public async Task<ApiResponse<bool>> RemoveUserInvitationAsync(Guid eventId, Guid userId)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var response = await _httpClient.DeleteAsync($"api/v1/Events/event-management/{eventId}/invitations/{userId}");
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "User invitation removed successfully",
+                };
+            }
+
+            // Parse error response from API (domain notifications)
+            try
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                if (dddApiResponse?.Errors?.Any() == true)
+                {
+                    var errorMessage = string.Join(", ", dddApiResponse.Errors);
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Data = false,
+                        Message = errorMessage,
+                        Errors = dddApiResponse.Errors.ToList(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // If JSON parsing fails, use raw response content
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to remove user invitation: {response.StatusCode}",
+                Errors = new List<string> { responseContent },
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing invitation for user {UserId} from event {EventId}", userId, eventId);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    public async Task<ApiResponse<bool>> CheckUserAccessAsync(Guid eventId, Guid userId)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            
+            var response = await _httpClient.GetAsync($"api/v1/Events/event-management/{eventId}/access/{userId}");
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                // The API returns a boolean indicating if the user has access
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<bool>>(responseContent);
+                
+                if (dddApiResponse?.Success == true)
+                {
+                    return new ApiResponse<bool>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data,
+                        Message = "User access checked successfully",
+                    };
+                }
+            }
+
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = $"Failed to check user access: {response.StatusCode}",
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking access for user {UserId} to event {EventId}", userId, eventId);
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Data = false,
+                Message = "Error connecting to the API service",
+            };
+        }
+    }
+
+    // My Events Only filtering methods implementation
+    public async Task<ApiResponse<List<EventViewModel>>> GetMyEventsOnlyAsync(Guid organizerId)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync($"api/v1/Events/event-management/my-events/{organizerId}");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<List<EventViewModel>>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
+                {
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data,
+                        Message = "My events retrieved successfully",
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true 
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = false,
+                        Message = errorMessage,
+                        Data = new List<EventViewModel>(),
+                    };
+                }
+            }
+
+            return new ApiResponse<List<EventViewModel>>
+            {
+                Success = false,
+                Message = $"Failed to fetch my events: {response.StatusCode}",
+                Data = new List<EventViewModel>(),
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching my events for organizer {OrganizerId}", organizerId);
+            return new ApiResponse<List<EventViewModel>>
+            {
+                Success = false,
+                Message = "Error connecting to the API service",
+                Data = new List<EventViewModel>(),
+            };
+        }
+    }
+
+    public async Task<ApiResponse<List<EventViewModel>>> GetMyEventsOnlyAsync(Guid organizerId, string status)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync($"api/v1/Events/event-management/my-events/{organizerId}/status/{status}");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<List<EventViewModel>>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
+                {
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data,
+                        Message = $"My {status.ToLower()} events retrieved successfully",
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true 
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = false,
+                        Message = errorMessage,
+                        Data = new List<EventViewModel>(),
+                    };
+                }
+            }
+
+            return new ApiResponse<List<EventViewModel>>
+            {
+                Success = false,
+                Message = $"Failed to fetch my {status.ToLower()} events: {response.StatusCode}",
+                Data = new List<EventViewModel>(),
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching my {Status} events for organizer {OrganizerId}", status, organizerId);
+            return new ApiResponse<List<EventViewModel>>
+            {
+                Success = false,
+                Message = "Error connecting to the API service",
+                Data = new List<EventViewModel>(),
+            };
+        }
+    }
+
+    public async Task<ApiResponse<List<EventViewModel>>> GetMyEventsOnlyAsync(Guid organizerId, int skip, int take)
+    {
+        try
+        {
+            await SetAuthenticationHeadersAsync();
+            var response = await _httpClient.GetAsync($"api/v1/Events/event-management/my-events/{organizerId}/page?skip={skip}&take={take}");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var dddApiResponse = JsonConvert.DeserializeObject<DddApiResponse<List<EventViewModel>>>(content);
+                
+                if (dddApiResponse?.Success == true && dddApiResponse.Data != null)
+                {
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = true,
+                        Data = dddApiResponse.Data,
+                        Message = "My events page retrieved successfully",
+                    };
+                }
+                else
+                {
+                    var errorMessage = dddApiResponse?.Errors?.Any() == true 
+                        ? string.Join(", ", dddApiResponse.Errors)
+                        : "Unknown error from API";
+                    
+                    return new ApiResponse<List<EventViewModel>>
+                    {
+                        Success = false,
+                        Message = errorMessage,
+                        Data = new List<EventViewModel>(),
+                    };
+                }
+            }
+
+            return new ApiResponse<List<EventViewModel>>
+            {
+                Success = false,
+                Message = $"Failed to fetch my events page: {response.StatusCode}",
+                Data = new List<EventViewModel>(),
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching paginated my events for organizer {OrganizerId}", organizerId);
+            return new ApiResponse<List<EventViewModel>>
+            {
+                Success = false,
+                Message = "Error connecting to the API service",
+                Data = new List<EventViewModel>(),
             };
         }
     }

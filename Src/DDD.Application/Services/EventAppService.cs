@@ -214,6 +214,77 @@ public class EventAppService : IEventAppService
 
         return eventEntity.CanUserAccess(userId);
     }
+    
+    /// <summary>
+    /// Gets "my events only" filtered by organizer ID using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <returns>A collection of events organized by the specified user.</returns>
+    public IEnumerable<EventViewModel> GetMyEventsOnly(Guid organizerId)
+    {
+        if (organizerId == Guid.Empty)
+        {
+            throw new ArgumentException("Organizer ID cannot be empty", nameof(organizerId));
+        }
+
+        return _eventRepository.GetMyEventsOnly(organizerId)
+            .ProjectTo<EventViewModel>(_mapper.ConfigurationProvider);
+    }
+    
+    /// <summary>
+    /// Gets "my events only" with status filtering using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <param name="status">The event status to filter by.</param>
+    /// <returns>A collection of events organized by the specified user with the given status.</returns>
+    public IEnumerable<EventViewModel> GetMyEventsOnly(Guid organizerId, string status)
+    {
+        if (organizerId == Guid.Empty)
+        {
+            throw new ArgumentException("Organizer ID cannot be empty", nameof(organizerId));
+        }
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            throw new ArgumentException("Status cannot be null or empty", nameof(status));
+        }
+
+        if (!Enum.TryParse<Domain.Models.EventStatus>(status, true, out var eventStatus))
+        {
+            throw new ArgumentException($"Invalid event status: {status}", nameof(status));
+        }
+
+        return _eventRepository.GetMyEventsOnly(organizerId, eventStatus)
+            .ProjectTo<EventViewModel>(_mapper.ConfigurationProvider);
+    }
+    
+    /// <summary>
+    /// Gets "my events only" with pagination using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <param name="skip">The number of events to skip for pagination.</param>
+    /// <param name="take">The number of events to take for pagination.</param>
+    /// <returns>A collection of events organized by the specified user with pagination applied.</returns>
+    public IEnumerable<EventViewModel> GetMyEventsOnly(Guid organizerId, int skip, int take)
+    {
+        if (organizerId == Guid.Empty)
+        {
+            throw new ArgumentException("Organizer ID cannot be empty", nameof(organizerId));
+        }
+
+        if (skip < 0)
+        {
+            throw new ArgumentException("Skip value cannot be negative", nameof(skip));
+        }
+
+        if (take <= 0)
+        {
+            throw new ArgumentException("Take value must be positive", nameof(take));
+        }
+
+        return _eventRepository.GetMyEventsOnly(organizerId, skip, take)
+            .ProjectTo<EventViewModel>(_mapper.ConfigurationProvider);
+    }
 
     public void Dispose()
     {

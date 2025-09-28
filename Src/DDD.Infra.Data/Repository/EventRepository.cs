@@ -4,6 +4,7 @@ using System.Linq;
 
 using DDD.Domain.Interfaces;
 using DDD.Domain.Models;
+using DDD.Domain.Specifications;
 using DDD.Infra.Data.Context;
 
 using Microsoft.EntityFrameworkCore;
@@ -90,5 +91,52 @@ public class EventRepository : Repository<Event>, IEventRepository
             .Where(e => e.OrganizerId == organizerId && e.Status == status)
             .OrderByDescending(e => e.CreatedAt)
             .ToList();
+    }
+    
+    /// <summary>
+    /// Gets events using specification pattern for advanced filtering.
+    /// This supports the "filter my events only" requirement and other complex queries.
+    /// </summary>
+    /// <param name="specification">The specification containing the filtering criteria.</param>
+    /// <returns>A queryable collection of events matching the specification.</returns>
+    public IQueryable<Event> GetEventsWithSpecification(ISpecification<Event> specification)
+    {
+        return GetAll(specification);
+    }
+    
+    /// <summary>
+    /// Gets "my events only" filtered by organizer ID using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <returns>A queryable collection of events organized by the specified user.</returns>
+    public IQueryable<Event> GetMyEventsOnly(Guid organizerId)
+    {
+        var spec = new MyEventsOnlySpecification(organizerId);
+        return GetAll(spec);
+    }
+    
+    /// <summary>
+    /// Gets "my events only" with status filtering using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <param name="status">The event status to filter by.</param>
+    /// <returns>A queryable collection of events organized by the specified user with the given status.</returns>
+    public IQueryable<Event> GetMyEventsOnly(Guid organizerId, EventStatus status)
+    {
+        var spec = new MyEventsOnlySpecification(organizerId, status);
+        return GetAll(spec);
+    }
+    
+    /// <summary>
+    /// Gets "my events only" with pagination using specification pattern.
+    /// </summary>
+    /// <param name="organizerId">The ID of the organizer whose events to retrieve.</param>
+    /// <param name="skip">The number of events to skip for pagination.</param>
+    /// <param name="take">The number of events to take for pagination.</param>
+    /// <returns>A queryable collection of events organized by the specified user with pagination applied.</returns>
+    public IQueryable<Event> GetMyEventsOnly(Guid organizerId, int skip, int take)
+    {
+        var spec = new MyEventsOnlySpecification(organizerId, skip: skip, take: take);
+        return GetAll(spec);
     }
 }

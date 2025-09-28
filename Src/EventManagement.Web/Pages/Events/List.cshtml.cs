@@ -8,11 +8,13 @@ namespace EventManagement.Web.Pages.Events;
 public class ListModel : PageModel
 {
     private readonly IEventApiService _eventApiService;
+    private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<ListModel> _logger;
 
-    public ListModel(IEventApiService eventApiService, ILogger<ListModel> logger)
+    public ListModel(IEventApiService eventApiService, ICurrentUserService currentUserService, ILogger<ListModel> logger)
     {
         _eventApiService = eventApiService;
+        _currentUserService = currentUserService;
         _logger = logger;
     }
 
@@ -36,13 +38,44 @@ public class ListModel : PageModel
     {
         try
         {
-            var response = await _eventApiService.GetEventsAsync();
+            ApiResponse<List<EventViewModel>> response;
+            
+            // Use the new filtering API if "My Events Only" is checked
+            if (ShowMyEventsOnly && _currentUserService.IsAuthenticated)
+            {
+                // Get current user ID and convert to Guid
+                var userIdString = _currentUserService.UserId;
+                if (Guid.TryParse(userIdString, out var currentUserId))
+                {
+                    // Use the appropriate filtering method based on status filter
+                    if (StatusFilter.HasValue)
+                    {
+                        var statusString = StatusFilter.Value.ToString();
+                        response = await _eventApiService.GetMyEventsOnlyAsync(currentUserId, statusString);
+                    }
+                    else
+                    {
+                        response = await _eventApiService.GetMyEventsOnlyAsync(currentUserId);
+                    }
+                }
+                else
+                {
+                    // Fallback to regular API if user ID parsing fails
+                    response = await _eventApiService.GetEventsAsync();
+                    _logger.LogWarning("Failed to parse current user ID for filtering: {UserId}", userIdString);
+                }
+            }
+            else
+            {
+                // Use regular API
+                response = await _eventApiService.GetEventsAsync();
+            }
             
             if (response.Success && response.Data != null)
             {
                 var filteredEvents = response.Data.AsEnumerable();
 
-                // Apply search filter
+                // Apply client-side search filter (since the API doesn't support search yet)
                 if (!string.IsNullOrEmpty(SearchTerm))
                 {
                     filteredEvents = filteredEvents.Where(e => 
@@ -50,17 +83,24 @@ public class ListModel : PageModel
                         (e.Description?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
                 }
 
-                // Apply status filter
-                if (StatusFilter.HasValue)
+                // Apply client-side status filter if not already applied via API
+                if (StatusFilter.HasValue && !ShowMyEventsOnly)
                 {
                     filteredEvents = filteredEvents.Where(e => e.Status == StatusFilter.Value);
                 }
 
-                // Apply my events filter (placeholder - in real implementation, filter by current user)
-                if (ShowMyEventsOnly)
+                // Apply client-side "my events" filter if user is not authenticated or API filtering failed
+                if (ShowMyEventsOnly && (!_currentUserService.IsAuthenticated || !Guid.TryParse(_currentUserService.UserId, out _)))
                 {
-                    // TODO: Filter by current user's OrganizerId
-                    // filteredEvents = filteredEvents.Where(e => e.OrganizerId == currentUserId);
+                    if (_currentUserService.IsAuthenticated && Guid.TryParse(_currentUserService.UserId, out var fallbackUserId))
+                    {
+                        filteredEvents = filteredEvents.Where(e => e.OrganizerId == fallbackUserId);
+                    }
+                    else
+                    {
+                        // If not authenticated, show no events
+                        filteredEvents = Enumerable.Empty<EventViewModel>();
+                    }
                 }
 
                 EventList = new EventListViewModel
@@ -70,14 +110,14 @@ public class ListModel : PageModel
                     StatusFilter = StatusFilter,
                     ShowMyEventsOnly = ShowMyEventsOnly,
                     Page = CurrentPage,
-                    TotalCount = filteredEvents.Count()
+                    TotalCount = filteredEvents.Count(),
                 };
 
-                Message = response.Data.Any() ? "" : "No events found.";
+                Message = response.Data.Any() ? string.Empty : "No events found.";
             }
             else
             {
-                Message = response.Message;
+                Message = response.Message ?? "Failed to load events.";
                 IsError = true;
                 _logger.LogWarning("Failed to fetch events: {Message}", response.Message);
             }

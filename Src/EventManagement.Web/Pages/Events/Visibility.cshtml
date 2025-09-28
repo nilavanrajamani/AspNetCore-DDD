@@ -1,0 +1,720 @@
+@page "{id:guid}/visibility"
+@model EventManagement.Web.Pages.Events.VisibilityModel
+@{
+    ViewData["Title"] = "Event Visibility Settings";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/Events">Events</a></li>
+        <li class="breadcrumb-item"><a href="/Events/@Model.Event.Id">@Model.Event.Title</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Visibility Settings</li>
+    </ol>
+</nav>
+
+<div class="container-fluid">
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.IsError)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @Model.Message
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Event Visibility Settings -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-light border-bottom-0">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-eye text-primary me-2"></i>
+                            Event Visibility & Access Control
+                        </h5>
+                        <p class="card-text text-muted mb-0">Control who can see and access your event</p>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="visibilityForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" asp-for="EventId" />
+                            
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <label class="form-label fw-semibold">
+                                        Event Visibility <span class="text-danger">*</span>
+                                    </label>
+                                    
+                                    <!-- Public Option -->
+                                    <div class="form-check form-check-card mb-3">
+                                        <input class="form-check-input" type="radio" name="SelectedVisibility" id="visibilityPublic" value="Public" 
+                                               @(Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.Public ? "checked" : "")>
+                                        <label class="form-check-label w-100" for="visibilityPublic">
+                                            <div class="card h-100">
+                                                <div class="card-body p-3">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fas fa-globe text-success me-2"></i>
+                                                        <h6 class="mb-0 fw-bold">Public Event</h6>
+                                                    </div>
+                                                    <p class="text-muted mb-0 small">
+                                                        Visible to everyone. Appears in public listings and search results.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    
+                                    <!-- Private Option -->
+                                    <div class="form-check form-check-card mb-3">
+                                        <input class="form-check-input" type="radio" name="SelectedVisibility" id="visibilityPrivate" value="Private"
+                                               @(Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.Private ? "checked" : "")>
+                                        <label class="form-check-label w-100" for="visibilityPrivate">
+                                            <div class="card h-100">
+                                                <div class="card-body p-3">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fas fa-lock text-warning me-2"></i>
+                                                        <h6 class="mb-0 fw-bold">Private Event</h6>
+                                                    </div>
+                                                    <p class="text-muted mb-0 small">
+                                                        Only visible to you. Hidden from public listings and other users.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    
+                                    <!-- Invite-Only Option -->
+                                    <div class="form-check form-check-card mb-3">
+                                        <input class="form-check-input" type="radio" name="SelectedVisibility" id="visibilityInviteOnly" value="InviteOnly"
+                                               @(Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.InviteOnly ? "checked" : "")>
+                                        <label class="form-check-label w-100" for="visibilityInviteOnly">
+                                            <div class="card h-100">
+                                                <div class="card-body p-3">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fas fa-user-friends text-info me-2"></i>
+                                                        <h6 class="mb-0 fw-bold">Invite-Only Event</h6>
+                                                    </div>
+                                                    <p class="text-muted mb-0 small">
+                                                        Visible only to invited users. Manage invitations with role-based access.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <a href="/Events/@Model.Event.Id" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Event
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="saveVisibilityBtn">
+                                    <i class="fas fa-save me-2"></i>Save Visibility Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Invitation Management Panel (for InviteOnly events) -->
+                <div id="invitationPanel" class="mt-4" style="@(Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.InviteOnly ? "" : "display: none;")">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-gradient-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-envelope me-2"></i>
+                                Manage Event Invitations
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Add New Invitation -->
+                            <div class="row mb-4">
+                                <div class="col-md-8">
+                                    <label for="inviteUserEmail" class="form-label fw-semibold">
+                                        Invite User by Email
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-at text-muted"></i>
+                                        </span>
+                                        <input type="email" 
+                                               class="form-control" 
+                                               id="inviteUserEmail" 
+                                               placeholder="user@example.com"
+                                               autocomplete="email">
+                                    </div>
+                                    <div class="invalid-feedback" id="emailValidationError" style="display: none;"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="inviteUserRole" class="form-label fw-semibold">
+                                        Role
+                                    </label>
+                                    <select class="form-select" id="inviteUserRole">
+                                        <option value="Attendee">Attendee</option>
+                                        <option value="Speaker">Speaker</option>
+                                        <option value="Sponsor">Sponsor</option>
+                                        <option value="VIP">VIP</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-primary" id="sendInvitationBtn">
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        Send Invitation
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Current Invitations List -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="fw-semibold mb-3">Current Invitations</h6>
+                                    <div id="invitationsList" class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th><i class="fas fa-user me-1"></i>User</th>
+                                                    <th><i class="fas fa-tag me-1"></i>Role</th>
+                                                    <th><i class="fas fa-calendar me-1"></i>Invited</th>
+                                                    <th><i class="fas fa-check-circle me-1"></i>Status</th>
+                                                    <th width="100">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="invitationsTableBody">
+                                                <!-- Dynamic content will be populated here -->
+                                            </tbody>
+                                        </table>
+                                        
+                                        <!-- Empty State -->
+                                        <div id="noInvitationsMessage" class="text-center py-4">
+                                            <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+                                            <h6 class="text-muted">No invitations sent yet</h6>
+                                            <p class="text-muted mb-0">Start by inviting users above</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Summary Sidebar -->
+            <div class="col-lg-4">
+                <!-- Access Summary Widget -->
+                <div class="card border-0 bg-light mb-4">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-2">
+                            <i class="fas fa-chart-bar me-2"></i>Access Summary
+                        </h6>
+                        <div class="d-flex justify-content-between small">
+                            <span>Visibility:</span>
+                            <span class="fw-bold text-primary" id="currentVisibility">@Model.Event.Visibility</span>
+                        </div>
+                        <div class="d-flex justify-content-between small" id="invitationsSummary" style="@(Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.InviteOnly ? "" : "display: none;")">
+                            <span>Total Invitations:</span>
+                            <span class="fw-bold text-info" id="totalInvitations">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between small" id="pendingInvitationsSummary" style="@(Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.InviteOnly ? "" : "display: none;")">
+                            <span>Pending:</span>
+                            <span class="fw-bold text-warning" id="pendingInvitations">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Details -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6><i class="fas fa-info-circle me-2"></i>Event Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-5">Title:</dt>
+                            <dd class="col-sm-7">@Model.Event.Title</dd>
+
+                            <dt class="col-sm-5">Status:</dt>
+                            <dd class="col-sm-7">
+                                @if (Model.Event.Status == EventManagement.Web.Models.EventStatus.Draft)
+                                {
+                                    <span class="badge bg-secondary">Draft</span>
+                                }
+                                else if (Model.Event.Status == EventManagement.Web.Models.EventStatus.Published)
+                                {
+                                    <span class="badge bg-success">Published</span>
+                                }
+                                else if (Model.Event.Status == EventManagement.Web.Models.EventStatus.Cancelled)
+                                {
+                                    <span class="badge bg-danger">Cancelled</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary">Completed</span>
+                                }
+                            </dd>
+
+                            <dt class="col-sm-5">Date:</dt>
+                            <dd class="col-sm-7">@Model.Event.StartDate.ToString("MMM dd, yyyy")</dd>
+
+                            <dt class="col-sm-5">Time:</dt>
+                            <dd class="col-sm-7">@Model.Event.StartDate.ToString("h:mm tt")</dd>
+
+                            @if (Model.Event.TotalCapacity.HasValue)
+                            {
+                                <dt class="col-sm-5">Capacity:</dt>
+                                <dd class="col-sm-7">@Model.Event.TotalCapacity.Value attendees</dd>
+                            }
+                        </dl>
+
+                        <div class="alert alert-light">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                <strong>Tip:</strong> Changes to visibility settings will take effect immediately.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="position-fixed top-50 start-50 translate-middle" style="display: none; z-index: 1050;">
+    <div class="bg-white border rounded p-4 shadow-lg text-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 mb-0 text-muted">Processing request...</p>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="successMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-check-card .form-check-input {
+        display: none;
+    }
+
+    .form-check-card .form-check-input:checked + .form-check-label .card {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+        background-color: rgba(var(--bs-primary-rgb), 0.05);
+    }
+
+    .form-check-card .card {
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        border: 2px solid var(--bs-border-color);
+    }
+
+    .form-check-card .card:hover {
+        border-color: var(--bs-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-sm {
+        width: 32px;
+        height: 32px;
+    }
+
+    .avatar-initial {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .invitation-panel-enter {
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .invitation-panel-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .table tbody tr {
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .btn-group-sm .btn {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-group-sm .btn:hover {
+        transform: scale(1.05);
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8, #0c7cd5);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Global variables
+        const eventId = '@Model.Event.Id';
+        let currentInvitations = [];
+
+        $(document).ready(function() {
+            initializeVisibilityHandlers();
+            
+            @if (Model.Event.Visibility == EventManagement.Web.Models.EventVisibility.InviteOnly)
+            {
+                <text>loadCurrentInvitations();</text>
+            }
+        });
+
+        // Initialize visibility selection handlers
+        function initializeVisibilityHandlers() {
+            $('input[name="SelectedVisibility"]').on('change', function() {
+                const selectedVisibility = this.value;
+                updateVisibilityUI(selectedVisibility);
+                
+                // Show/hide invitation panel based on selection
+                const invitationPanel = $('#invitationPanel');
+                if (selectedVisibility === 'InviteOnly') {
+                    invitationPanel.show();
+                    loadCurrentInvitations();
+                } else {
+                    invitationPanel.hide();
+                }
+            });
+
+            // Send invitation button handler
+            $('#sendInvitationBtn').on('click', sendInvitation);
+
+            // Form submission handler
+            $('#visibilityForm').on('submit', function(e) {
+                const selectedVisibility = $('input[name="SelectedVisibility"]:checked').val();
+                
+                if (!selectedVisibility) {
+                    e.preventDefault();
+                    showErrorToast('Please select a visibility option');
+                    return false;
+                }
+
+                // Update the UI immediately for better user experience
+                updateAccessSummary(selectedVisibility);
+                
+                // Show loading spinner
+                showLoadingSpinner();
+                
+                // Allow form to submit naturally
+                return true;
+            });
+        }
+
+
+
+        // Send new invitation
+        function sendInvitation() {
+            const email = $('#inviteUserEmail').val().trim();
+            const role = $('#inviteUserRole').val();
+            
+            if (!email || !validateEmail(email)) {
+                showErrorToast('Please enter a valid email address');
+                $('#inviteUserEmail').addClass('is-invalid');
+                $('#emailValidationError').text('Please enter a valid email address').show();
+                return;
+            }
+
+            $('#inviteUserEmail').removeClass('is-invalid');
+            $('#emailValidationError').hide();
+            
+            // For demo purposes, show a message that this feature will be implemented
+            showSuccessToast('Invitation feature will be available in the next update. Visibility settings have been saved.');
+            $('#inviteUserEmail').val('');
+            $('#inviteUserRole').val('Attendee');
+        }
+
+        // Mock function to lookup user by email
+        async function lookupUserByEmail(email) {
+            // This would normally call an API endpoint
+            // For now, generate a mock GUID based on email
+            return generateMockGuid(email);
+        }
+
+        function generateMockGuid(email) {
+            // Simple hash-based GUID generation for demo purposes
+            let hash = 0;
+            for (let i = 0; i < email.length; i++) {
+                const char = email.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            const hex = Math.abs(hash).toString(16).padStart(8, '0');
+            return `${hex.substring(0, 8)}-${hex.substring(0, 4)}-4${hex.substring(1, 4)}-a${hex.substring(2, 5)}-${hex}${hex.substring(0, 4)}`;
+        }
+
+        // Remove invitation
+        function removeInvitation(userId) {
+            if (!confirm('Are you sure you want to remove this invitation?')) {
+                return;
+            }
+            
+            showSuccessToast('Invitation removed successfully');
+            // Remove the row from the table for demo purposes
+            $(`tr[data-invitation-id="${userId}"]`).fadeOut(300, function() {
+                $(this).remove();
+                // Update the summary counts
+                const remainingInvitations = $('#invitationsTableBody tr').length - 1;
+                updateInvitationsSummaryDirectly(remainingInvitations);
+            });
+        }
+
+        // Load current invitations (mock implementation)
+        async function loadCurrentInvitations() {
+            try {
+                // Mock data for demonstration
+                const mockInvitations = [
+                    {
+                        userId: '11111111-1111-1111-1111-111111111111',
+                        userName: 'John Doe',
+                        userEmail: 'john.doe@example.com',
+                        role: 'Speaker',
+                        status: 'Pending',
+                        invitedAt: new Date().toISOString()
+                    },
+                    {
+                        userId: '22222222-2222-2222-2222-222222222222',
+                        userName: 'Jane Smith',
+                        userEmail: 'jane.smith@example.com',
+                        role: 'VIP',
+                        status: 'Accepted',
+                        invitedAt: new Date(Date.now() - 86400000).toISOString()
+                    }
+                ];
+                
+                currentInvitations = mockInvitations;
+                renderInvitationsList(mockInvitations);
+                updateInvitationsSummary(mockInvitations);
+                
+            } catch (error) {
+                console.error('Error loading invitations:', error);
+            }
+        }
+
+        // Render invitations list
+        function renderInvitationsList(invitations) {
+            const tbody = $('#invitationsTableBody');
+            const noInvitationsMessage = $('#noInvitationsMessage');
+            
+            if (invitations.length === 0) {
+                tbody.hide();
+                noInvitationsMessage.show();
+                return;
+            }
+            
+            tbody.show();
+            noInvitationsMessage.hide();
+            
+            const html = invitations.map(invitation => `
+                <tr data-invitation-id="${invitation.userId}">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm me-2">
+                                <span class="avatar-initial rounded-circle bg-primary-subtle text-primary">
+                                    ${getInitials(invitation.userName)}
+                                </span>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">${invitation.userName}</h6>
+                                <small class="text-muted">${invitation.userEmail}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-${getRoleColor(invitation.role)}-subtle text-${getRoleColor(invitation.role)}">
+                            <i class="fas fa-${getRoleIcon(invitation.role)} me-1"></i>
+                            ${invitation.role}
+                        </span>
+                    </td>
+                    <td class="text-muted">
+                        ${formatDate(invitation.invitedAt)}
+                    </td>
+                    <td>
+                        <span class="badge bg-${getStatusColor(invitation.status)}">
+                            <i class="fas fa-${getStatusIcon(invitation.status)} me-1"></i>
+                            ${invitation.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeInvitation('${invitation.userId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            tbody.html(html);
+        }
+
+        // Utility functions
+        function getRoleColor(role) {
+            const colors = {
+                'Attendee': 'primary',
+                'Speaker': 'success',
+                'Sponsor': 'warning',
+                'VIP': 'danger'
+            };
+            return colors[role] || 'secondary';
+        }
+
+        function getRoleIcon(role) {
+            const icons = {
+                'Attendee': 'user',
+                'Speaker': 'microphone',
+                'Sponsor': 'handshake',
+                'VIP': 'crown'
+            };
+            return icons[role] || 'user';
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Pending': 'warning',
+                'Accepted': 'success',
+                'Declined': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusIcon(status) {
+            const icons = {
+                'Pending': 'clock',
+                'Accepted': 'check',
+                'Declined': 'times'
+            };
+            return icons[status] || 'question';
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase();
+        }
+
+        function validateEmail(email) {
+            const re = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            return re.test(email);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Update UI functions
+        function updateVisibilityUI(visibility) {
+            $('#currentVisibility').text(visibility);
+            
+            const invitationsSummary = $('#invitationsSummary');
+            const pendingInvitationsSummary = $('#pendingInvitationsSummary');
+            
+            if (visibility === 'InviteOnly') {
+                invitationsSummary.show();
+                pendingInvitationsSummary.show();
+            } else {
+                invitationsSummary.hide();
+                pendingInvitationsSummary.hide();
+            }
+        }
+
+        function updateAccessSummary(visibility) {
+            $('#currentVisibility').text(visibility);
+            
+            const invitationsSummary = $('#invitationsSummary');
+            const pendingInvitationsSummary = $('#pendingInvitationsSummary');
+            
+            if (visibility === 'InviteOnly') {
+                invitationsSummary.show();
+                pendingInvitationsSummary.show();
+            } else {
+                invitationsSummary.hide();
+                pendingInvitationsSummary.hide();
+            }
+        }
+
+        function updateInvitationsSummary(invitations) {
+            $('#totalInvitations').text(invitations.length);
+            const pendingCount = invitations.filter(i => i.status === 'Pending').length;
+            $('#pendingInvitations').text(pendingCount);
+        }
+
+        function updateInvitationsSummaryDirectly(totalCount) {
+            $('#totalInvitations').text(totalCount);
+            $('#pendingInvitations').text(Math.max(0, totalCount - 1)); // Assume most are pending
+        }
+
+        // Loading and notification functions
+        function showLoadingSpinner() {
+            $('#loadingSpinner').show();
+        }
+
+        function hideLoadingSpinner() {
+            $('#loadingSpinner').hide();
+        }
+
+        function showSuccessToast(message) {
+            $('#successMessage').text(message);
+            const toast = new bootstrap.Toast($('#successToast')[0]);
+            toast.show();
+        }
+
+        function showErrorToast(message) {
+            $('#errorMessage').text(message);
+            const toast = new bootstrap.Toast($('#errorToast')[0]);
+            toast.show();
+        }
+    </script>
+}

@@ -227,4 +227,36 @@ public class EventsController : ApiController
         var hasAccess = _eventAppService.CanUserAccessEvent(id, userId);
         return Response(new { HasAccess = hasAccess });
     }
+
+    [HttpGet]
+    [Authorize]
+    [Route("event-management/my-events/{organizerId:guid}")]
+    public IActionResult GetMyEventsOnly(Guid organizerId)
+    {
+        var events = _eventAppService.GetMyEventsOnly(organizerId);
+        return Response(events);
+    }
+
+    [HttpGet]
+    [Authorize]
+    [Route("event-management/my-events/{organizerId:guid}/status/{status}")]
+    public IActionResult GetMyEventsOnlyByStatus(Guid organizerId, string status)
+    {
+        var events = _eventAppService.GetMyEventsOnly(organizerId, status);
+        return Response(events);
+    }
+
+    [HttpGet]
+    [Authorize]
+    [Route("event-management/my-events/{organizerId:guid}/page")]
+    public IActionResult GetMyEventsOnlyPaginated(Guid organizerId, [FromQuery] int skip = 0, [FromQuery] int take = 10)
+    {
+        if (take > 100) // Limit maximum page size
+        {
+            take = 100;
+        }
+
+        var events = _eventAppService.GetMyEventsOnly(organizerId, skip, take);
+        return Response(events);
+    }
 }

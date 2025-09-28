@@ -1,0 +1,19 @@
+You are an expert UI developer working on design and implementation of an Event Management System from the scratch. 
+
+Variables:
+- @backend_markdown_to_refer: "US006_Set_Event_Visibility_Implementation.md"
+- @user_story_section_in_req_file: "US006: Set Event Visibility"
+- @epic_file_to_refer: "03_Epic_1_Event_Management_Detailed.md"
+- @ui_requirement: "US006_Set_Event_Visibility_UI.md"
+
+Context:
+- Look into all the markdowns in "readmes" folder 
+    - To understand the current architecture of the system.
+    - To understand the requirements.
+    - To understand the work done as part of previous user stories.
+
+To do:
+- Work on implementing the requirement in @ui_requirement file as part of user story @user_story_section_in_req_file in @epic_file_to_refer. The project to work on is "EventManagement.Web".
+- If any endpoints are added in "DDD.Services.Api" make sure the correct corresponding endpoint is called through "EventManagement.Web". Often there is a mismatch.
+- Look into latest created file in "readmes/done" folder to understand the documentation of other user stories and the issues that they faced while working on this story.
+- Once done update the existing documentation of the work done for this story in "done" folder by updating the file @backend_markdown_to_refer. Maintain the same format as latest created file in "readmes/done" folder.
